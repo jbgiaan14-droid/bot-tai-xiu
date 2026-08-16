@@ -495,8 +495,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
         totalGameCount++;
         const currentSessionId = totalGameCount;
 
-        const rollingMsg = await channel.send('🎲 **ĐANG LẮC ĐỢI KẾT QUẢ...**\
-        https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWk3MGs0bmFzazI3djR5aG0yZXBvZmxpZXR4YnlyNndmYmlwYXlpayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l4hLA4ALhP0eD1ZGo/giphy.gif');
+        const rollingMsg = await channel.send('🎲 **ĐANG LẮC ĐỢI KẾT QUẢ...**\nhttps://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWk3MGs0bmFzazI3djR5aG0yZXBvZmxpZXR4YnlyNndmYmlwYXlpayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l4hLA4ALhP0eD1ZGo/giphy.gif');
         try { await gameMessage.delete(); } catch(e) {}
 
         setTimeout(async () => {
@@ -504,18 +503,37 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
             const totalTai = bets.tai.amount;
             const totalXiu = bets.xiu.amount;
 
+            // Kiểm tra xem có cửa nào có tổng tiền cược từ 200m trở lên hay không
+            let highStakesSide = null;
+            if (totalTai >= 200000000 && totalXiu < 200000000) {
+                highStakesSide = 'tai'; // Cửa Tài cược >= 200m
+            } else if (totalXiu >= 200000000 && totalTai < 200000000) {
+                highStakesSide = 'xiu'; // Cửa Xỉu cược >= 200m
+            } else if (totalTai >= 200000000 && totalXiu >= 200000000) {
+                // Nếu cả 2 bên đều >= 200m, chọn bên nào nhiều tiền hơn làm bên bị áp dụng gãy
+                highStakesSide = totalTai >= totalXiu ? 'tai' : 'xiu';
+            }
+
             // Kiểm tra xem có người chơi nào đang ở chuỗi thua 6-9 trận mà có đặt cược hay không
             let forcedWinSide = null;
             for (const uid in userBets) {
                 let streak = userLoseStreaks[uid] || 0;
                 if (streak >= 6 && streak <= 9 && Math.random() < 0.85) {
-                    forcedWinSide = userBets[uid].side; // Tỉ lệ thắng 85% theo cửa người đó chọn
+                    forcedWinSide = userBets[uid].side; 
                     break; 
                 }
             }
 
             if (forcedWinSide) {
                 winSide = forcedWinSide;
+            } else if (highStakesSide) {
+                // Nếu có cửa đạt mốc >= 200m: 85% tỷ lệ cửa đó sẽ GÃY (thua), nghĩa là cửa đối diện thắng
+                const isGai = Math.random() < 0.85;
+                if (isGai) {
+                    winSide = highStakesSide === 'tai' ? 'xiu' : 'tai';
+                } else {
+                    winSide = highStakesSide; // 15% may mắn thoát hiểm vẫn thắng
+                }
             } else if (totalTai !== totalXiu) {
                 const minoritySide = totalTai < totalXiu ? 'tai' : 'xiu';
                 const majoritySide = totalTai > totalXiu ? 'tai' : 'xiu';
