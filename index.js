@@ -27,12 +27,13 @@ const client = new Client({
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const ALLOWED_CHANNEL_ID = '1538197175731748894'; // Kênh #gambling🎲
-const PAY_BOT_NAME = 'giaanday2121'; // Tên bot nhận tiền pay trước
+const PAY_BOT_NAME = 'giaanday2121'; // Tên bot nhận tiền pay trong game
 
 const balances = {};
 const gameHistory = []; 
 const activeSessions = {};
 const pendingDeposits = {}; 
+const ignToDiscordMap = {}; // Lưu ánh xạ: IGN -> Discord ID (để quét log tự động nhận diện)
 let totalGameCount = 891193; 
 
 function getBalance(userId) { 
@@ -71,12 +72,18 @@ function formatMoneyFull(amount) {
     return amount.toString() + ' Gambling';
 }
 
-// ==================== WEBHOOK NHẬN TIỀN TỪ SERVER GAME (CỔNG 3001) ====================
+// ==================== WEBHOOK NHẬN TIỀN TỪ LOG SCANNER TRONG GAME (CỔNG 3001) ====================
 app.post('/webhook/deposit', async (req, res) => {
-    const { discordId, amount, ign } = req.body;
+    let { discordId, amount, ign } = req.body;
+
+    // Nếu Log Scanner không gửi trực tiếp discordId mà chỉ gửi ign, ta tự động tra cứu từ bảng đã lưu khi khách bấm nút Nạp
+    if (!discordId && ign) {
+        const cleanIgn = ign.trim().toLowerCase();
+        discordId = ignToDiscordMap[cleanIgn];
+    }
 
     if (!discordId || !amount) {
-        return res.status(400).json({ success: false, message: 'Thiếu thông tin discordId hoặc amount' });
+        return res.status(400).json({ success: false, message: 'Thiếu thông tin discordId hoặc amount (IGN chưa được liên kết qua bảng Nạp)' });
     }
 
     const depositAmount = parseInt(amount);
@@ -253,14 +260,17 @@ client.on('interactionCreate', async (i) => {
 
     if (i.isModalSubmit()) {
         if (i.customId === 'modal_nap') {
-            const ign = i.fields.getTextInputValue('nap_ign');
+            const ign = i.fields.getTextInputValue('nap_ign').trim();
             const rawAmount = i.fields.getTextInputValue('nap_amount');
             const formattedAmount = rawAmount.toUpperCase().endsWith('M' ) || rawAmount.toUpperCase().endsWith('B' ) || rawAmount.toUpperCase().endsWith('K' ) ? rawAmount.toUpperCase() : rawAmount.toUpperCase() + 'M';
             
+            // Tự động lưu ánh xạ IGN sang Discord ID để hệ thống quét log tự nhận diện
+            ignToDiscordMap[ign.toLowerCase()] = i.user.id;
+
             const embedDM = new EmbedBuilder()
                 .setColor(0x22c55e)
                 .setTitle('📥 Yêu cầu nạp Gambling')
-                .setDescription(`👤 **IGN xác nhận:** \`${ign}\`\n💰 **Số tiền:** \`${formattedAmount} Gambling\`\n⏰ **Hạn chót:** 5 phút tới\n\n📝 **Hướng dẫn:**\nChuyển đúng số Money bằng lệnh:\n\`/pay ${PAY_BOT_NAME} ${rawAmount.toLowerCase()}\`\n\n📌 **Lưu ý:**\n• Hệ thống tự cộng tiền tự động.\n• Vui lòng kiểm tra đúng tên bot trước khi chuyển!`);
+                .setDescription(`👤 **IGN xác nhận:** \`${ign}\`\n💰 **Số tiền:** \`${formattedAmount} Gambling\`\n⏰ **Hạn chót:** 5 phút tới\n\n📝 **Hướng dẫn:**\nChuyển đúng số Money bằng lệnh trong game:\n\`/pay ${PAY_BOT_NAME} ${rawAmount.toLowerCase()}\`\n\n📌 **Lưu ý:**\n• Hệ thống tự cộng tiền tự động ngay khi pay!`);
             
             let dmMessage;
             try {
@@ -269,7 +279,6 @@ client.on('interactionCreate', async (i) => {
                 return await i.reply({ content: '❌ Không thể gửi tin nhắn (DM) cho bạn! Vui lòng mở khóa tin nhắn riêng rồi thử lại.', ephemeral: true });
             }
 
-            // Hẹn giờ chính xác 5 phút (300,000 ms) sau đó edit tin nhắn DM thành thông báo hết hạn
             const depositKey = `${i.user.id}_${Date.now()}`;
             pendingDeposits[depositKey] = setTimeout(async () => {
                 delete pendingDeposits[depositKey];
@@ -277,13 +286,13 @@ client.on('interactionCreate', async (i) => {
                     const expiredEmbed = new EmbedBuilder()
                         .setColor(0xef4444)
                         .setTitle('⏰ Yêu cầu nạp đã hết hạn')
-                        .setDescription(`Yêu cầu nạp **${formattedAmount} Gambling** của bạn đã hết hạn.\n\n👤 **IGN:** \`${ign}\`\n💰 **Số tiền:** \`${formattedAmount} Gambling\`\n\n📝 **Hướng dẫn:**\nVui lòng tạo yêu cầu mới để nạp tiền.\n\n*Yêu cầu đã hết hạn*`);
+                        .setDescription(`Yêu cầu nạp **${formattedAmount} Gambling** của bạn đã hết hạn.\n\n👤 **IGN:** \`${ign}\`\n💰 **Số tiền:** \`${formattedAmount} Gambling\`\n\nVui lòng tạo yêu cầu mới nếu muốn nạp tiếp.`);
                     
                     await dmMessage.edit({ embeds: [expiredEmbed] });
                 } catch (e) {}
             }, 5 * 60 * 1000);
 
-            return await i.reply({ content: `Đã gửi 1 tin nhắn (DM) cho bạn, hãy kiểm tra về đơn nạp ${rawAmount}`, ephemeral: true });
+            return await i.reply({ content: `✅ Đã tạo đơn nạp! Hãy kiểm tra tin nhắn (DM) riêng của bot để lấy cú pháp pay nhé.`, ephemeral: true });
         }
 
         if (i.customId === 'modal_rut') {
@@ -311,9 +320,9 @@ client.on('interactionCreate', async (i) => {
                 new ButtonBuilder().setCustomId(`reject_rut_${i.user.id}`).setLabel('Từ chối (Hoàn tiền)').setStyle(ButtonStyle.Danger)
             );
 
-            await i.channel.send({ content: `🔔 Có yêu cầu rút tiền mới cần Bot KingMC Gambling / Admin xử lý!`, embeds: [embedAdmin], components: [rowAdmin] }).catch(() => {});
+            await i.channel.send({ content: `🔔 Có yêu cầu rút tiền mới cần xử lý!`, embeds: [embedAdmin], components: [rowAdmin] }).catch(() => {});
 
-            return await i.reply({ content: `✅ Đã tạo yêu cầu rút **${formatMoneyFull(amount)}** về nhân vật **${ign}** thành công! Bot KingMC Gambling đang tiến hành xử lý.`, ephemeral: true });
+            return await i.reply({ content: `✅ Đã tạo yêu cầu rút **${formatMoneyFull(amount)}** về nhân vật **${ign}** thành công!`, ephemeral: true });
         }
 
         if (i.customId === 'modal_chuyen') {
