@@ -248,7 +248,8 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
         const rollingEmbed = new EmbedBuilder()
             .setColor(0x3b82f6)
             .setTitle('🎲 ĐANG LẮC ĐỢI KẾT QUẢ...')
-            .setImage('https://cdn.discordapp.com/attachments/1534127809977516104/1538428234738438144/dice-rolling.gif?ex=6a82a471&is=6a8152f1&hm=2bb62489c7c73ba0fffefd952bd40be436d71432210021684f10eb9da828de1f&'); // Link GIF chuẩn của ông
+            // Link GIF này là link công khai vĩnh viễn, không bị lỗi như link của Discord CDN
+            .setImage('https://media.tenor.com/t3501v7t5pMAAAAi/rolling-dice.gif');
 
         const rollingMsg = await channel.send({ embeds: [rollingEmbed] });
         try { await gameMessage.delete(); } catch(e) {}
