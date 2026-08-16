@@ -49,7 +49,6 @@ function parseMoney(input, userId) {
 }
 
 client.once('ready', () => {
-    // Dọn sạch mọi session cũ nếu bot bị restart đột ngột
     for (const channelId in activeSessions) {
         if (activeSessions[channelId].timer) clearInterval(activeSessions[channelId].timer);
     }
@@ -162,7 +161,6 @@ async function startTaiXiuSession(channel, previousMsg = null) {
         try { await previousMsg.delete(); } catch(e) {}
     }
 
-    // Kiểm tra chống dupe: Nếu kênh đã tồn tại session chạy ngầm, hủy bỏ timer cũ
     if (activeSessions[channel.id]) {
         if (activeSessions[channel.id].timer) clearInterval(activeSessions[channel.id].timer);
     }
@@ -238,12 +236,12 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
             const totalXiu = bets.xiu.amount;
 
             if (totalTai !== totalXiu) {
-                const isNaturalWin = Math.random() < 0.60; 
-                if (isNaturalWin) {
-                    winSide = totalTai > totalXiu ? 'tai' : 'xiu';
-                } else {
-                    winSide = totalTai > totalXiu ? 'xiu' : 'tai';
-                }
+                const minoritySide = totalTai < totalXiu ? 'tai' : 'xiu';
+                const majoritySide = totalTai > totalXiu ? 'tai' : 'xiu';
+
+                // 60% bên đặt ít hơn thắng, 40% bên đặt nhiều hơn thắng (để đánh lừa)
+                const isMinorityWin = Math.random() < 0.60; 
+                winSide = isMinorityWin ? minoritySide : majoritySide;
             } else {
                 winSide = Math.random() < 0.5 ? 'tai' : 'xiu';
             }
@@ -284,7 +282,6 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
             await rollingMsg.edit({ embeds: [finalEmbed] });
 
             setTimeout(() => {
-                // Chỉ mở phiên mới nếu chưa có phiên nào chạy trong kênh này
                 if (!activeSessions[channel.id]) {
                     startTaiXiuSession(channel, rollingMsg);
                 }
