@@ -2,7 +2,7 @@
 const http = require('http');
 const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Bot KingMC & Jing Gambling is running!');
+    res.end('Bot Jing Gambling is running!');
 });
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
@@ -84,7 +84,7 @@ client.on('messageCreate', async (message) => {
         const embed = new EmbedBuilder()
             .setColor(0x38bdf8)
             .setTitle('🏛️ JING GAMEBLING\nTRUNG TÂM NẠP & RÚT GAMBLING')
-            .setDescription('🟢 **ONLINE – HỆ THỐNG SẴN SÀNG**\n\n📌 **Chức năng có bot sẵn sàng sẽ tự mở**\nCác bot còn lại có thể online sau mà không làm khóa bot đang hoạt động.\n\n🔒 **Giao dịch an toàn**\nChỉ chuyển sau khi đã tạo yêu cầu. Kiểm tra đúng IGN, số tiền và hướng dẫn được gửi riêng.\n\n⏱️ **Timeout / mất kết nối**\nYêu cầu sẽ tự động hết hạn sau 5 phút nếu không được xác nhận.\n\n🔄 **Cập nhật trạng thái**\nVừa xong\n*Hệ thống tự động • Vui lòng đọc kỹ hướng dẫn*');
+            .setDescription('🟢 **ONLINE – HỆ THỐNG SẴN SÀNG**\n\n📌 **Chức năng có bot sẵn sàng sẽ tự mở**\nCác bot còn lại có thể online sau mà không làm khóa bot đang hoạt động.\n\n🔒 **Giao dịch an toàn**\nChỉ đổi thưởng/vật phẩm khi đã tạo yêu cầu chính xác.\n\n⏱️ **Timeout / mất kết nối**\nYêu cầu sẽ tự động hết hạn sau 5 phút nếu không được xác nhận.\n\n🔄 **Cập nhật trạng thái**\nVừa xong\n*Hệ thống nội bộ game • Vui lòng đọc kỹ hướng dẫn*');
 
         const row1 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('btn_open_nap').setLabel('Nạp Money').setEmoji('💰').setStyle(ButtonStyle.Success),
@@ -122,22 +122,21 @@ client.on('messageCreate', async (message) => {
 client.on('interactionCreate', async (i) => {
     const session = activeSessions[i.channelId];
 
-    // Xử lý các nút bấm trong bảng Ngân hàng (Nạp, Rút, Chuyển, Số dư, Lịch sử, Hướng dẫn)
     if (i.isButton()) {
         if (i.customId === 'btn_open_nap') {
-            const modal = new ModalBuilder().setCustomId('modal_nap').setTitle('YÊU CẦU NẠP MONEY');
+            const modal = new ModalBuilder().setCustomId('modal_nap').setTitle('YÊU CẦU NẠP MONEY (QUY ĐỔI VẬT PHẨM)');
             const input = new TextInputBuilder()
                 .setCustomId('nap_amount')
-                .setLabel('Nhập số tiền muốn nạp:')
+                .setLabel('Số lượng điểm/vật phẩm muốn nạp:')
                 .setStyle(TextInputStyle.Short)
-                .setPlaceholder('VD: 50000, 100k, 1m')
+                .setPlaceholder('VD: 50k, 100k, 1m')
                 .setRequired(true);
             modal.addComponents(new ActionRowBuilder().addComponents(input));
             return await i.showModal(modal);
         }
 
         if (i.customId === 'btn_open_rut') {
-            const modal = new ModalBuilder().setCustomId('modal_rut').setTitle('YÊU CẦU RÚT MONEY');
+            const modal = new ModalBuilder().setCustomId('modal_rut').setTitle('YÊU CẦU RÚT MONEY (ĐỔI THƯỞNG)');
             const amountInput = new TextInputBuilder()
                 .setCustomId('rut_amount')
                 .setLabel('Số tiền Gambling muốn rút:')
@@ -146,9 +145,9 @@ client.on('interactionCreate', async (i) => {
                 .setRequired(true);
             const infoInput = new TextInputBuilder()
                 .setCustomId('rut_info')
-                .setLabel('Thông tin nhận (Ngân hàng / Momo / STK):')
+                .setLabel('Tên nhân vật / IGN / Quà nhận trong game:')
                 .setStyle(TextInputStyle.Paragraph)
-                .setPlaceholder('VD: MB Bank - 0123456789 - Pham Van Huong')
+                .setPlaceholder('VD: Tên nhân vật Minecraft / UID / Vật phẩm mong muốn')
                 .setRequired(true);
             modal.addComponents(new ActionRowBuilder().addComponents(amountInput), new ActionRowBuilder().addComponents(infoInput));
             return await i.showModal(modal);
@@ -184,8 +183,8 @@ client.on('interactionCreate', async (i) => {
         if (i.customId === 'btn_huongdan') {
             const embed = new EmbedBuilder()
                 .setColor(0xfacc15)
-                .setTitle('📖 HƯỚNG DẪN SỬ DỤNG HỆ THỐNG')
-                .setDescription('• **Nạp Money**: Điền số tiền cần nạp, bot sẽ cung cấp mã nội dung và thông tin chuyển khoản.\n• **Rút Money**: Điền số tiền và thông tin tài khoản nhận, Admin sẽ duyệt và chuyển khoản cho bạn.\n• **Chuyển tiền**: Chuyển trực tiếp Gambling coin cho thành viên khác trong server.\n• **Tài Xỉu**: Tham gia chơi tại kênh `#gambling🎲`.');
+                .setTitle('📖 HƯỚNG DẪN HỆ THỐNG NỘI BỘ')
+                .setDescription('• **Nạp Money**: Đổi điểm/vật phẩm server sang Gambling coin.\n• **Rút Money**: Đổi Gambling coin ra vật phẩm/phần thưởng trong game.\n• **Chuyển tiền**: Tặng Gambling coin trực tiếp cho người chơi khác.\n• **Tài Xỉu**: Giải trí tại kênh `#gambling🎲`.');
             return i.reply({ embeds: [embed], ephemeral: true });
         }
 
@@ -194,7 +193,7 @@ client.on('interactionCreate', async (i) => {
                 return i.reply({ content: '❌ Bạn không có quyền duyệt lệnh này!', ephemeral: true });
             }
             const targetUserId = i.customId.replace('approve_rut_', '');
-            await i.update({ content: `✅ **ĐÃ DUYỆT** lệnh rút tiền cho <@${targetUserId}> bởi Admin <@${i.user.id}>.`, components: [] });
+            await i.update({ content: `✅ **ĐÃ DUYỆT** lệnh đổi thưởng cho <@${targetUserId}> bởi Admin <@${i.user.id}>.`, components: [] });
             return;
         }
 
@@ -203,12 +202,11 @@ client.on('interactionCreate', async (i) => {
                 return i.reply({ content: '❌ Bạn không có quyền từ chối lệnh này!', ephemeral: true });
             }
             const targetUserId = i.customId.replace('reject_rut_', '');
-            await i.update({ content: `❌ **ĐÃ TỪ CHỐI** lệnh rút tiền của <@${targetUserId}> bởi Admin <@${i.user.id}>.`, components: [] });
+            await i.update({ content: `❌ **ĐÃ TỪ CHỐI** lệnh đổi thưởng của <@${targetUserId}> bởi Admin <@${i.user.id}>.`, components: [] });
             return;
         }
     }
 
-    // Xử lý Modal Nạp, Rút, Chuyển tiền
     if (i.isModalSubmit()) {
         if (i.customId === 'modal_nap') {
             const rawAmount = i.fields.getTextInputValue('nap_amount');
@@ -216,8 +214,8 @@ client.on('interactionCreate', async (i) => {
             
             const embed = new EmbedBuilder()
                 .setColor(0x22c55e)
-                .setTitle('💳 HÓA ĐƠN NẠP MONEY')
-                .setDescription(`👤 **Người tạo:** <@${i.user.id}>\n💵 **Số tiền yêu cầu:** **${rawAmount}**\n🔑 **Nội dung chuyển khoản:** \`${codeNap}\`\n\n🏦 **Thông tin tài khoản:**\n• Ngân hàng: **MB Bank**\n• Số tài khoản: \`0123456789\`\n• Chủ tài khoản: **PHAM VAN HUONG**\n\n*Hết hạn sau 5 phút nếu không giao dịch.*`);
+                .setTitle('💳 XÁC NHẬN NẠP MONEY / VẬT PHẨM')
+                .setDescription(`👤 **Người tạo:** <@${i.user.id}>\n🎁 **Số lượng:** **${rawAmount}**\n🔑 **Mã xác nhận nội bộ:** \`${codeNap}\`\n\n📌 **Hướng dẫn:**\nĐưa mã \`${codeNap}\` cho quản tài/admin trong server để hoàn tất cộng điểm vào game.\n\n*Hết hạn sau 5 phút.*`);
             
             return await i.reply({ embeds: [embed], ephemeral: true });
         }
@@ -238,18 +236,18 @@ client.on('interactionCreate', async (i) => {
 
             const embedAdmin = new EmbedBuilder()
                 .setColor(0xef4444)
-                .setTitle('💸 YÊU CẦU RÚT MONEY MỚI')
-                .setDescription(`👤 **Thành viên:** <@${i.user.id}>\n💰 **Số tiền rút:** **${formatMoneyFull(amount)}**\n📋 **Thông tin nhận:**\n\`\`\`${rutInfo}\`\`\``)
+                .setTitle('💸 YÊU CẦU ĐỔI THƯỞNG / RÚT MONEY MỚI')
+                .setDescription(`👤 **Thành viên:** <@${i.user.id}>\n💰 **Số lượng rút:** **${formatMoneyFull(amount)}**\n📋 **Thông tin nhận / IGN:**\n\`\`\`${rutInfo}\`\`\``)
                 .setTimestamp();
 
             const rowAdmin = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`approve_rut_${i.user.id}`).setLabel('Duyệt').setStyle(ButtonStyle.Success),
+                new ButtonBuilder().setCustomId(`approve_rut_${i.user.id}`).setLabel('Duyệt (Đã trao quà)').setStyle(ButtonStyle.Success),
                 new ButtonBuilder().setCustomId(`reject_rut_${i.user.id}`).setLabel('Từ chối (Hoàn tiền)').setStyle(ButtonStyle.Danger)
             );
 
-            await i.channel.send({ content: `🔔 Có yêu cầu rút tiền mới gửi đến Admin!`, embeds: [embedAdmin], components: [rowAdmin] }).catch(() => {});
+            await i.channel.send({ content: `🔔 Có yêu cầu đổi thưởng mới cần Admin xử lý!`, embeds: [embedAdmin], components: [rowAdmin] }).catch(() => {});
 
-            return await i.reply({ content: `✅ Đã tạo yêu cầu rút **${formatMoneyFull(amount)}** thành công!`, ephemeral: true });
+            return await i.reply({ content: `✅ Đã tạo yêu cầu rút **${formatMoneyFull(amount)}** thành công! Admin sẽ tiến hành chuyển vật phẩm cho bạn.`, ephemeral: true });
         }
 
         if (i.customId === 'modal_chuyen') {
