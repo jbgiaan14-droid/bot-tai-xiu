@@ -48,7 +48,14 @@ function parseMoney(input, userId) {
     return isNaN(num) ? NaN : Math.floor(num * multiplier);
 }
 
-client.once('ready', () => console.log(`🤖 Bot KingMC Gambling đã sẵn sàng với tính năng nhập tiền tự do!`));
+client.once('ready', () => {
+    // Dọn sạch mọi session cũ nếu bot bị restart đột ngột
+    for (const channelId in activeSessions) {
+        if (activeSessions[channelId].timer) clearInterval(activeSessions[channelId].timer);
+    }
+    Object.keys(activeSessions).forEach(key => delete activeSessions[key]);
+    console.log(`🤖 Bot KingMC Gambling đã sẵn sàng với tính năng nhập tiền tự do!`);
+});
 
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
@@ -96,7 +103,6 @@ client.on('interactionCreate', async (i) => {
         const side = i.customId.replace('modal_bet_', '');
         const rawAmount = i.fields.getTextInputValue('amount_input').trim();
         
-        // Gọi hàm parseMoney để hỗ trợ gõ 1m, 2m, 3m, 10b,...
         let amount = parseMoney(rawAmount, i.user.id);
 
         if (isNaN(amount) || amount < 5000) {
@@ -156,6 +162,11 @@ async function startTaiXiuSession(channel, previousMsg = null) {
         try { await previousMsg.delete(); } catch(e) {}
     }
 
+    // Kiểm tra chống dupe: Nếu kênh đã tồn tại session chạy ngầm, hủy bỏ timer cũ
+    if (activeSessions[channel.id]) {
+        if (activeSessions[channel.id].timer) clearInterval(activeSessions[channel.id].timer);
+    }
+
     const sessionData = {
         timeLeft: 60,
         bets: { tai: { amount: 0, users: new Set() }, xiu: { amount: 0, users: new Set() } },
@@ -188,6 +199,11 @@ async function startTaiXiuSession(channel, previousMsg = null) {
     sessionData.gameMessage = await channel.send({ embeds: [sessionData.getEmbed()], components: sessionData.getComponents() });
 
     const timer = setInterval(async () => {
+        if (!activeSessions[channel.id] || activeSessions[channel.id] !== sessionData) {
+            clearInterval(timer);
+            return;
+        }
+
         sessionData.timeLeft--;
         if (sessionData.timeLeft <= 0) {
             clearInterval(timer);
@@ -202,6 +218,8 @@ async function startTaiXiuSession(channel, previousMsg = null) {
             } catch (e) {}
         }
     }, 1000);
+
+    sessionData.timer = timer;
 }
 
 async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
@@ -266,7 +284,10 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
             await rollingMsg.edit({ embeds: [finalEmbed] });
 
             setTimeout(() => {
-                startTaiXiuSession(channel, rollingMsg);
+                // Chỉ mở phiên mới nếu chưa có phiên nào chạy trong kênh này
+                if (!activeSessions[channel.id]) {
+                    startTaiXiuSession(channel, rollingMsg);
+                }
             }, 5000);
 
         }, 3000);
