@@ -26,7 +26,7 @@ const PAY_BOT_NAME = 'giaanday2121'; // Tên bot nhận tiền pay trước
 const balances = {};
 const gameHistory = []; 
 const activeSessions = {};
-const pendingDeposits = {}; // Lưu trữ danh sách đơn nạp đang chờ xử lý
+const pendingDeposits = {}; 
 let totalGameCount = 891193; 
 
 function getBalance(userId) { 
@@ -215,11 +215,12 @@ client.on('interactionCreate', async (i) => {
         if (i.customId === 'modal_nap') {
             const ign = i.fields.getTextInputValue('nap_ign');
             const rawAmount = i.fields.getTextInputValue('nap_amount');
+            const formattedAmount = rawAmount.toUpperCase().endsWith('M' ) || rawAmount.toUpperCase().endsWith('B' ) || rawAmount.toUpperCase().endsWith('K' ) ? rawAmount.toUpperCase() : rawAmount.toUpperCase() + 'M';
             
             const embedDM = new EmbedBuilder()
                 .setColor(0x22c55e)
                 .setTitle('📥 Yêu cầu nạp Gambling')
-                .setDescription(`**${rawAmount.toUpperCase()} Gambling**\n\n👤 **IGN xác nhận:** \`${ign}\`\n💰 **Số tiền:** \`${rawAmount.toUpperCase()} Gambling\`\n⏰ **Hạn chót:** 5 phút tới\n\n📝 **Hướng dẫn:**\nChuyển đúng số Money bằng lệnh:\n\`/pay ${PAY_BOT_NAME} ${rawAmount.toLowerCase()}\`\n\n📌 **Lưu ý:**\n• Hệ thống tự cộng tiền tự động.\n• Vui lòng kiểm tra đúng tên bot trước khi chuyển!`);
+                .setDescription(`👤 **IGN xác nhận:** \`${ign}\`\n💰 **Số tiền:** \`${formattedAmount} Gambling\`\n⏰ **Hạn chót:** 5 phút tới\n\n📝 **Hướng dẫn:**\nChuyển đúng số Money bằng lệnh:\n\`/pay ${PAY_BOT_NAME} ${rawAmount.toLowerCase()}\`\n\n📌 **Lưu ý:**\n• Hệ thống tự cộng tiền tự động.\n• Vui lòng kiểm tra đúng tên bot trước khi chuyển!`);
             
             let dmMessage;
             try {
@@ -228,12 +229,17 @@ client.on('interactionCreate', async (i) => {
                 return await i.reply({ content: '❌ Không thể gửi tin nhắn (DM) cho bạn! Vui lòng mở khóa tin nhắn riêng (Allow direct messages from server members) rồi thử lại.', ephemeral: true });
             }
 
-            // Hẹn giờ 5 phút (300,000 ms) đếm ngược thực tế
+            // Hẹn giờ chính xác 5 phút (300,000 ms) sau đó edit tin nhắn DM thành thông báo hết hạn
             const depositKey = `${i.user.id}_${Date.now()}`;
             pendingDeposits[depositKey] = setTimeout(async () => {
                 delete pendingDeposits[depositKey];
                 try {
-                    await i.user.send(`Đã hết hạn 5 phút, yêu cầu nạp ${rawAmount} đã bị hủy`);
+                    const expiredEmbed = new EmbedBuilder()
+                        .setColor(0xef4444)
+                        .setTitle('⏰ Yêu cầu nạp đã hết hạn')
+                        .setDescription(`Yêu cầu nạp **${formattedAmount} Gambling** của bạn đã hết hạn.\n\n👤 **IGN:** \`${ign}\`\n💰 **Số tiền:** \`${formattedAmount} Gambling\`\n\n📝 **Hướng dẫn:**\nVui lòng tạo yêu cầu mới để nạp tiền.\n\n*Yêu cầu đã hết hạn*`);
+                    
+                    await dmMessage.edit({ embeds: [expiredEmbed] });
                 } catch (e) {}
             }, 5 * 60 * 1000);
 
