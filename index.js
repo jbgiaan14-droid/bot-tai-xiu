@@ -2,15 +2,13 @@
 const http = require('http');
 const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Bot Jing Gambling is running!');
+    res.end('Bot KingMC Gambling is running!');
 });
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🌐 Web server đang chạy trên cổng ${PORT}`);
 });
 
-// ==========================================
-// CẤU HÌNH BOT DISCORD
 const { Client, GatewayIntentBits, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 
 const client = new Client({ 
@@ -74,7 +72,6 @@ client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
     const content = message.content.toLowerCase();
 
-    // Lệnh khởi tạo bảng Nạp / Rút chuẩn mẫu hình ảnh
     if (content === '!setupbank') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return message.reply({ content: '❌ Chỉ có Quản trị viên mới dùng được lệnh này!', ephemeral: true });
@@ -83,7 +80,7 @@ client.on('messageCreate', async (message) => {
 
         const embed = new EmbedBuilder()
             .setColor(0x38bdf8)
-            .setTitle('🏛️ JING GAMEBLING\nTRUNG TÂM NẠP & RÚT GAMBLING')
+            .setTitle('🏛️ KINGMC GAMBLING\nTRUNG TÂM NẠP & RÚT GAMBLING')
             .setDescription('🟢 **ONLINE – HỆ THỐNG SẴN SÀNG**\n\n📌 **Chức năng có bot sẵn sàng sẽ tự mở**\nCác bot còn lại có thể online sau mà không làm khóa bot đang hoạt động.\n\n🔒 **Giao dịch an toàn**\nChỉ đổi thưởng/vật phẩm khi đã tạo yêu cầu chính xác.\n\n⏱️ **Timeout / mất kết nối**\nYêu cầu sẽ tự động hết hạn sau 5 phút nếu không được xác nhận.\n\n🔄 **Cập nhật trạng thái**\nVừa xong\n*Hệ thống nội bộ game • Vui lòng đọc kỹ hướng dẫn*');
 
         const row1 = new ActionRowBuilder().addComponents(
@@ -123,49 +120,58 @@ client.on('interactionCreate', async (i) => {
     const session = activeSessions[i.channelId];
 
     if (i.isButton()) {
+        // --- 1. MODAL NẠP GAMBLING (Hình 1) ---
         if (i.customId === 'btn_open_nap') {
-            const modal = new ModalBuilder().setCustomId('modal_nap').setTitle('YÊU CẦU NẠP MONEY');
-            const input = new TextInputBuilder()
-                .setCustomId('nap_amount')
-                .setLabel('Số lượng Gambling muốn nạp:')
+            const modal = new ModalBuilder().setCustomId('modal_nap').setTitle('NẠP GAMBLING');
+            const ignInput = new TextInputBuilder()
+                .setCustomId('nap_ign')
+                .setLabel('In-Game Name (IGN)')
                 .setStyle(TextInputStyle.Short)
-                .setPlaceholder('VD: 50k, 100k, 1m')
+                .setPlaceholder('Nhập tên nhân vật của bạn')
                 .setRequired(true);
-            modal.addComponents(new ActionRowBuilder().addComponents(input));
+            const amountInput = new TextInputBuilder()
+                .setCustomId('nap_amount')
+                .setLabel('Số tiền (hỗ trợ M, B) - TỐI THIỂU 1M')
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder('Ví dụ: 1M, 2M, 5M')
+                .setRequired(true);
+            modal.addComponents(new ActionRowBuilder().addComponents(ignInput), new ActionRowBuilder().addComponents(amountInput));
             return await i.showModal(modal);
         }
 
+        // --- 2. MODAL RÚT GAMBLING (Hình 2) ---
         if (i.customId === 'btn_open_rut') {
-            const modal = new ModalBuilder().setCustomId('modal_rut').setTitle('YÊU CẦU RÚT MONEY');
+            const modal = new ModalBuilder().setCustomId('modal_rut').setTitle('RÚT GAMBLING');
+            const ignInput = new TextInputBuilder()
+                .setCustomId('rut_ign')
+                .setLabel('In-Game Name (IGN) nhận tiền')
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder('Nhập tên nhân vật của bạn')
+                .setRequired(true);
             const amountInput = new TextInputBuilder()
                 .setCustomId('rut_amount')
-                .setLabel('Số tiền Gambling muốn rút:')
+                .setLabel('Số tiền (hỗ trợ M, B) - TỐI THIỂU 1M')
                 .setStyle(TextInputStyle.Short)
-                .setPlaceholder('VD: 500k, 1m')
+                .setPlaceholder('Ví dụ: 1M, 2M, 5M')
                 .setRequired(true);
-            const infoInput = new TextInputBuilder()
-                .setCustomId('rut_info')
-                .setLabel('Thông tin nhận (Tên nhân vật / UID):')
-                .setStyle(TextInputStyle.Paragraph)
-                .setPlaceholder('VD: Tên nhân vật trong game')
-                .setRequired(true);
-            modal.addComponents(new ActionRowBuilder().addComponents(amountInput), new ActionRowBuilder().addComponents(infoInput));
+            modal.addComponents(new ActionRowBuilder().addComponents(ignInput), new ActionRowBuilder().addComponents(amountInput));
             return await i.showModal(modal);
         }
 
+        // --- 3. MODAL CHUYỂN TIỀN GAMBLING (Hình 3) ---
         if (i.customId === 'btn_open_chuyen') {
-            const modal = new ModalBuilder().setCustomId('modal_chuyen').setTitle('CHUYỂN TIỀN CHO NGƯỜI KHÁC');
+            const modal = new ModalBuilder().setCustomId('modal_chuyen').setTitle('CHUYỂN TIỀN GAMBLING');
             const targetInput = new TextInputBuilder()
                 .setCustomId('chuyen_target')
-                .setLabel('ID hoặc Mention người nhận:')
+                .setLabel('Discord ID người nhận')
                 .setStyle(TextInputStyle.Short)
-                .setPlaceholder('VD: 123456789012345678')
+                .setPlaceholder('Nhập Discord ID (ví dụ: 1234567890)')
                 .setRequired(true);
             const amountInput = new TextInputBuilder()
                 .setCustomId('chuyen_amount')
-                .setLabel('Số tiền muốn chuyển:')
+                .setLabel('Số tiền (hỗ trợ M, B)')
                 .setStyle(TextInputStyle.Short)
-                .setPlaceholder('VD: 100k, 1m')
+                .setPlaceholder('Ví dụ: 1M, 500K')
                 .setRequired(true);
             modal.addComponents(new ActionRowBuilder().addComponents(targetInput), new ActionRowBuilder().addComponents(amountInput));
             return await i.showModal(modal);
@@ -184,7 +190,7 @@ client.on('interactionCreate', async (i) => {
             const embed = new EmbedBuilder()
                 .setColor(0xfacc15)
                 .setTitle('📖 HƯỚNG DẪN HỆ THỐNG NỘI BỘ')
-                .setDescription('• **Nạp Money**: Gửi yêu cầu nạp điểm vào ví.\n• **Rút Money**: Rút Gambling ra khỏi hệ thống.\n• **Chuyển tiền**: Tặng Gambling trực tiếp cho người chơi khác.\n• **Tài Xỉu**: Giải trí tại kênh `#gambling🎲`.');
+                .setDescription('• **Nạp Gambling**: Gửi yêu cầu nạp điểm vào ví.\n• **Rút Gambling**: Rút tiền từ ví về nhân vật trong game.\n• **Chuyển tiền**: Tặng Gambling trực tiếp cho người chơi khác qua Discord ID.\n• **Tài Xỉu**: Giải trí tại kênh `#gambling🎲`.');
             return i.reply({ embeds: [embed], ephemeral: true });
         }
 
@@ -209,24 +215,25 @@ client.on('interactionCreate', async (i) => {
 
     if (i.isModalSubmit()) {
         if (i.customId === 'modal_nap') {
+            const ign = i.fields.getTextInputValue('nap_ign');
             const rawAmount = i.fields.getTextInputValue('nap_amount');
-            const codeNap = `JING${Math.floor(1000 + Math.random() * 9000)}`;
+            const codeNap = `KMC${Math.floor(1000 + Math.random() * 9000)}`;
             
             const embed = new EmbedBuilder()
                 .setColor(0x22c55e)
-                .setTitle('💳 XÁC NHẬN NẠP MONEY')
-                .setDescription(`👤 **Người tạo:** <@${i.user.id}>\n🎁 **Số lượng:** **${rawAmount}**\n🔑 **Mã xác nhận nội bộ:** \`${codeNap}\`\n\n📌 **Hướng dẫn:**\nĐưa mã \`${codeNap}\` cho quản tài/admin trong server để hoàn tất.\n\n*Hết hạn sau 5 phút.*`);
+                .setTitle('💳 YÊU CẦU NẠP GAMBLING')
+                .setDescription(`👤 **Người tạo:** <@${i.user.id}>\n🎮 **IGN:** \`${ign}\`\n🎁 **Số lượng:** **${rawAmount}**\n🔑 **Mã xác nhận nội bộ:** \`${codeNap}\`\n\n📌 **Hướng dẫn:**\nĐưa mã \`${codeNap}\` cho Bot KingMC Gambling hoặc Admin trong server để hoàn tất.\n\n*Hết hạn sau 5 phút.*`);
             
             return await i.reply({ embeds: [embed], ephemeral: true });
         }
 
         if (i.customId === 'modal_rut') {
+            const ign = i.fields.getTextInputValue('rut_ign');
             const rawAmount = i.fields.getTextInputValue('rut_amount');
-            const rutInfo = i.fields.getTextInputValue('rut_info');
             let amount = parseMoney(rawAmount, i.user.id);
 
-            if (isNaN(amount) || amount <= 0) {
-                return i.reply({ content: '❌ Số tiền rút không hợp lệ!', ephemeral: true });
+            if (isNaN(amount) || amount < 1_000_000) {
+                return i.reply({ content: '❌ Số tiền rút không hợp lệ hoặc thấp hơn mức tối thiểu 1M!', ephemeral: true });
             }
             if (getBalance(i.user.id) < amount) {
                 return i.reply({ content: `❌ Số dư không đủ! Số dư hiện tại: ${formatMoneyFull(getBalance(i.user.id))}`, ephemeral: true });
@@ -236,8 +243,8 @@ client.on('interactionCreate', async (i) => {
 
             const embedAdmin = new EmbedBuilder()
                 .setColor(0xef4444)
-                .setTitle('💸 YÊU CẦU RÚT MONEY MỚI')
-                .setDescription(`👤 **Thành viên:** <@${i.user.id}>\n💰 **Số lượng rút:** **${formatMoneyFull(amount)}**\n📋 **Thông tin nhận:**\n\`\`\`${rutInfo}\`\`\``)
+                .setTitle('💸 YÊU CẦU RÚT GAMBLING MỚI')
+                .setDescription(`👤 **Thành viên:** <@${i.user.id}>\n🎮 **IGN Nhận tiền:** \`${ign}\`\n💰 **Số lượng rút:** **${formatMoneyFull(amount)}**`)
                 .setTimestamp();
 
             const rowAdmin = new ActionRowBuilder().addComponents(
@@ -245,9 +252,9 @@ client.on('interactionCreate', async (i) => {
                 new ButtonBuilder().setCustomId(`reject_rut_${i.user.id}`).setLabel('Từ chối (Hoàn tiền)').setStyle(ButtonStyle.Danger)
             );
 
-            await i.channel.send({ content: `🔔 Có yêu cầu rút tiền mới cần Admin xử lý!`, embeds: [embedAdmin], components: [rowAdmin] }).catch(() => {});
+            await i.channel.send({ content: `🔔 Có yêu cầu rút tiền mới cần Bot KingMC Gambling / Admin xử lý!`, embeds: [embedAdmin], components: [rowAdmin] }).catch(() => {});
 
-            return await i.reply({ content: `✅ Đã tạo yêu cầu rút **${formatMoneyFull(amount)}** thành công! Admin sẽ tiến hành xử lý cho bạn.`, ephemeral: true });
+            return await i.reply({ content: `✅ Đã tạo yêu cầu rút **${formatMoneyFull(amount)}** về nhân vật **${ign}** thành công! Bot KingMC Gambling đang tiến hành xử lý.`, ephemeral: true });
         }
 
         if (i.customId === 'modal_chuyen') {
