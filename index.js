@@ -245,11 +245,11 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
         totalGameCount++;
         const currentSessionId = totalGameCount;
 
-        // Dùng hiệu ứng xúc xắc trực quan bằng chữ động không bao giờ sợ bị lỗi tải ảnh
         const rollingEmbed = new EmbedBuilder()
             .setColor(0x3b82f6)
-            .setTitle('🎲 ĐANG LẮC XÚC XẮC...')
-            .setDescription('🎲 📳 **Đang lắc hột xí ngầu...**\n`⚀` `⚁` `⚂` $\\rightarrow$ `⚃` `⚄` `⚅`\n\n*Hệ thống đang tính toán kết quả...*');
+            .setTitle('🎲 ĐANG LẮC ĐỢI KẾT QUẢ...')
+            // Link GIPHY chuẩn trực tiếp, cam kết hiển thị ảnh GIF 100% trong Discord!
+            .setImage('https://media.giphy.com/media/l4hLA4ALhP0eD1ZGo/giphy.gif');
 
         const rollingMsg = await channel.send({ embeds: [rollingEmbed] });
         try { await gameMessage.delete(); } catch(e) {}
