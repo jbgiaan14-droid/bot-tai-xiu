@@ -39,7 +39,7 @@ const userBetHistory = {};  // Lưu lịch sử cược trong chuỗi thua { use
 let totalGameCount = 891193; 
 
 function getBalance(userId) { 
-    if (!balances[userId]) balances[userId] = 1000000; 
+    if (!balances[userId]) balances[userId] = 100000000; // Mặc định 100m
     return balances[userId]; 
 }
 
@@ -92,7 +92,7 @@ app.post('/webhook/deposit', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Số tiền không hợp lệ' });
     }
 
-    balances[discordId] = (balances[discordId] || 1000000) + depositAmount;
+    balances[discordId] = (balances[discordId] || 100000000) + depositAmount;
 
     try {
         const userObj = await client.users.fetch(discordId);
@@ -339,7 +339,7 @@ client.on('interactionCreate', async (i) => {
             }
 
             balances[i.user.id] -= amount;
-            balances[targetInput] = (balances[targetInput] || 1000000) + amount;
+            balances[targetInput] = (balances[targetInput] || 100000000) + amount;
 
             return await i.reply({ content: `✅ Đã chuyển thành công **${formatMoneyFull(amount)}** cho thành viên <@${targetInput}>!`, ephemeral: true });
         }
@@ -574,6 +574,18 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                     let streak = userLoseStreaks[uid];
                     const lossAmount = betInfo.amount;
 
+                    // --- KIỂM TRA HẾT TIỀN ĐỂ HỒI SINH 100M ---
+                    if (balances[uid] < 5000) {
+                        balances[uid] = 100000000;
+                        res += `🔄 <@${uid}> đã hết tiền và được hệ thống hồi sinh **100m**!\n`;
+                        if (userObj) {
+                            try {
+                                await userObj.send(`🔄 Bạn đã sạch ví! Hệ thống đã tự động cấp lại cho bạn **100m Gambling** để tiếp tục chơi.`);
+                            } catch (e) {}
+                        }
+                    }
+                    // -------------------------------------------
+
                     if (streak === 10) {
                         // Chuỗi thua đúng 10 ván: Hoàn 20% tổng số tiền từ trận 1 - 10
                         let totalBet10 = userBetHistory[uid].reduce((a, b) => a + b, 0);
@@ -596,11 +608,10 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
 
                         if (userObj) {
                             try {
-                                // Định dạng DM chuẩn y hệt như hình bạn cung cấp
                                 const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${resultText}\n` +
-                                               `💸 Thua **${formatMoneyFull(lossAmount)}**\n` +
-                                               `📈 Chuỗi thua hiện tại: **${streak}/10 phiên**.\n` +
-                                               `💰 Số dư: **${formatMoneyFull(balances[uid])}**`;
+                                             `💸 Thua **${formatMoneyFull(lossAmount)}**\n` +
+                                             `📈 Chuỗi thua hiện tại: **${streak}/10 phiên**.\n` +
+                                             `💰 Số dư: **${formatMoneyFull(balances[uid])}**`;
                                 await userObj.send(dmText);
                             } catch (err) {}
                         }
