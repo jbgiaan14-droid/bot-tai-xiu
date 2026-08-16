@@ -666,7 +666,7 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
 const LINH_VAT = ['Bầu', 'Cua', 'Tôm', 'Cá', 'Gà', 'Nai'];
 const EMOJI_MAP = {
-    'Bầu': '🎃', // Hoặc thay bằng custom emoji của server bạn
+    'Bầu': '🍈', // Hoặc thay bằng custom emoji của server bạn
     'Cua': '🦀',
     'Tôm': '🦐',
     'Cá': '🐟',
