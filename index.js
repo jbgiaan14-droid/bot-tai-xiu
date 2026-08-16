@@ -8,7 +8,7 @@ http.createServer((req, res) => {
 // ==========================================
 // CẤU HÌNH CƠ BẢN
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const ALLOWED_CHANNEL_ID = '1538197175731748894'; // 👈 Thay ID kênh chat game chuẩn của ông vào đây nhé!
+const ALLOWED_CHANNEL_ID = '1538197175731748894'; // Kênh #gambling🎲 của ông
 // ==========================================
 
 const { Client, GatewayIntentBits, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
@@ -49,11 +49,11 @@ function parseMoney(input, userId) {
     return isNaN(num) ? NaN : Math.floor(num * multiplier);
 }
 
-function formatMoneyShort(amount) {
-    if (amount >= 1_000_000_000) return (amount / 1_000_000_000).toFixed(2).replace(/\.0$/, '') + 'b';
-    if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'm';
-    if (amount >= 1_000) return (amount / 1_000).toFixed(1).replace(/\.0$/, '') + 'k';
-    return amount.toString();
+function formatMoneyFull(amount) {
+    if (amount >= 1_000_000_000) return (amount / 1_000_000_000).toFixed(2).replace(/\.0$/, '') + 'b Gambling';
+    if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'm Gambling';
+    if (amount >= 1_000) return (amount / 1_000).toFixed(1).replace(/\.0$/, '') + 'k Gambling';
+    return amount.toString() + ' Gambling';
 }
 
 client.once('ready', () => {
@@ -69,12 +69,10 @@ client.on('messageCreate', async (message) => {
     const content = message.content.toLowerCase();
 
     if (content === '!tx' || content === '!taixiu') {
-        // 1. Kiểm tra đúng kênh được phép chơi chưa
         if (message.channel.id !== ALLOWED_CHANNEL_ID) {
             return message.reply({ content: `❌ Lệnh này chỉ được dùng tại kênh <#${ALLOWED_CHANNEL_ID}> thôi nhé!`, ephemeral: true });
         }
 
-        // 2. Kiểm tra quyền Admin (Chỉ Admin server mới được gõ lệnh mở game)
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return message.reply({ content: '❌ Chỉ có Quản trị viên (Admin) mới có quyền khởi tạo phiên Tài Xỉu!', ephemeral: true });
         }
@@ -88,7 +86,6 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-// SỰ KIỆN TƯƠNG TÁC
 client.on('interactionCreate', async (i) => {
     const session = activeSessions[i.channelId];
 
@@ -106,7 +103,7 @@ client.on('interactionCreate', async (i) => {
             .setCustomId('amount_input')
             .setLabel('Nhập số tiền muốn cược:')
             .setStyle(TextInputStyle.Short)
-            .setPlaceholder('VD: 1m, 2m, 10b, 500k')
+            .setPlaceholder('VD: 1m, 20m, 10b, 500k')
             .setRequired(true);
 
         modal.addComponents(new ActionRowBuilder().addComponents(amountInput));
@@ -121,10 +118,10 @@ client.on('interactionCreate', async (i) => {
         let amount = parseMoney(rawAmount, i.user.id);
 
         if (isNaN(amount) || amount < 5000) {
-            return i.reply({ content: '❌ Vui lòng nhập số tiền hợp lệ (tối thiểu 5,000$)!', ephemeral: true });
+            return i.reply({ content: '❌ Vui lòng nhập số tiền hợp lệ (tối thiểu 5,000 Gambling)!', ephemeral: true });
         }
         if (getBalance(i.user.id) < amount) {
-            return i.reply({ content: `❌ Bạn không đủ tiền! Số dư hiện tại: ${getBalance(i.user.id).toLocaleString()}$`, ephemeral: true });
+            return i.reply({ content: `❌ Bạn không đủ tiền! Số dư hiện tại: ${formatMoneyFull(getBalance(i.user.id))}`, ephemeral: true });
         }
         if (session.userBets[i.user.id]) {
             return i.reply({ content: '❌ Bạn đã đặt cược rồi!', ephemeral: true });
@@ -135,7 +132,7 @@ client.on('interactionCreate', async (i) => {
         session.bets[side].amount += amount;
         session.bets[side].users.add(i.user.id);
 
-        await i.reply({ content: `✅ Đã đặt thành công **${amount.toLocaleString()}$** vào cửa **${side.toUpperCase()}**!`, ephemeral: true });
+        await i.reply({ content: `✅ Đã đặt thành công **${formatMoneyFull(amount)}** vào cửa **${side.toUpperCase()}**!`, ephemeral: true });
         
         try {
             await session.gameMessage.edit({ embeds: [session.getEmbed(false)], components: session.getComponents(false) });
@@ -146,7 +143,7 @@ client.on('interactionCreate', async (i) => {
     if (i.isButton()) {
         if (i.customId === 'btn_sodu') {
             const bal = getBalance(i.user.id);
-            return i.reply({ content: `💰 Số dư hiện tại trong ví: **${bal.toLocaleString()}$**`, ephemeral: true });
+            return i.reply({ content: `💰 Số dư hiện tại trong ví: **${formatMoneyFull(bal)}**`, ephemeral: true });
         }
         if (i.customId === 'btn_lichsu') {
             if (gameHistory.length === 0) return i.reply({ content: '📜 Chưa có lịch sử ván đấu!', ephemeral: true });
@@ -161,7 +158,7 @@ client.on('interactionCreate', async (i) => {
             let desc = sortedUsers.length === 0 ? 'Chưa có dữ liệu!' : '';
             sortedUsers.forEach(([uid, money], index) => {
                 let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `**#${index + 1}**`;
-                desc += `${medal} <@${uid}> - **${money.toLocaleString()}$**\n`;
+                desc += `${medal} <@${uid}> - **${formatMoneyFull(money)}**\n`;
             });
             const bxhEmbed = new EmbedBuilder().setColor(0xfacc15).setTitle('🏆 BXH Đại Gia').setDescription(desc);
             return i.reply({ embeds: [bxhEmbed], ephemeral: true });
@@ -183,13 +180,14 @@ async function startTaiXiuSession(channel, previousMsg = null) {
         bets: { tai: { amount: 0, users: new Set() }, xiu: { amount: 0, users: new Set() } },
         userBets: {},
         getEmbed(isLocked = false) {
+            const totalBetAmount = this.bets.tai.amount + this.bets.xiu.amount;
             return new EmbedBuilder()
                 .setColor(isLocked ? 0xef4444 : 0xf59e0b)
                 .setTitle('🎲 KINGMC GAMBLING - TÀI XỈU TỰ ĐỘNG')
-                .setDescription(`Nhấn nút bên dưới để mở bảng nhập số tiền cược tùy ý.\n*(Hỗ trợ viết tắt: k, m, b - VD: 1m, 2m, 10b, 500k)*\n\n💰 Tổng cược: **${(this.bets.tai.amount + this.bets.xiu.amount).toLocaleString()}$**`)
+                .setDescription(`Nhấn nút bên dưới để mở bảng nhập số tiền cược tùy ý.\n*(Hỗ trợ viết tắt: k, m, b - VD: 1m, 20m, 10b, 500k)*\n\n💰 Tổng cược: **${formatMoneyFull(totalBetAmount)}**`)
                 .addFields(
-                    { name: '🔴 TÀI', value: `💰 ${this.bets.tai.amount.toLocaleString()}$ (${this.bets.tai.users.size} người)`, inline: true },
-                    { name: '🔵 XỈU', value: `💰 ${this.bets.xiu.amount.toLocaleString()}$ (${this.bets.xiu.users.size} người)`, inline: true },
+                    { name: '🔴 TÀI', value: `💰 ${formatMoneyFull(this.bets.tai.amount)} (${this.bets.tai.users.size} người)`, inline: true },
+                    { name: '🔵 XỈU', value: `💰 ${formatMoneyFull(this.bets.xiu.amount)} (${this.bets.xiu.users.size} người)`, inline: true },
                     { name: '⏳ Trạng thái', value: isLocked ? '🔒 Đã khóa, chuẩn bị lắc!' : `⏱️ Còn lại: ${this.timeLeft}s` }
                 );
         },
@@ -284,24 +282,25 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                 const userObj = await client.users.fetch(uid).catch(() => null);
 
                 if (isWin) {
-                    const profit = betInfo.amount; 
-                    const totalReceive = betInfo.amount * 2; 
+                    // Tỷ lệ thắng x1.9 (Lãi = cược * 0.9, Tổng nhận về = cược * 1.9)
+                    const profit = Math.floor(betInfo.amount * 0.9); 
+                    const totalReceive = Math.floor(betInfo.amount * 1.9); 
                     balances[uid] += totalReceive;
-                    res += `🎉 <@${uid}> thắng **+${totalReceive.toLocaleString()}$** (Số dư: ${balances[uid].toLocaleString()}$)\n`;
+                    res += `🎉 <@${uid}> thắng **+${formatMoneyFull(totalReceive)}** (Số dư: ${formatMoneyFull(balances[uid])})\n`;
 
                     if (userObj) {
                         try {
-                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thắng\n💵 Lãi **${formatMoneyShort(profit)} Gambling** · Nhận về **${formatMoneyShort(totalReceive)} Gambling**\n📉 Chuỗi thắng: 1 phiên\n💰 Số dư: **${formatMoneyShort(balances[uid])} Gambling**`;
+                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thắng\n💵 Lãi **${formatMoneyFull(profit)} Gambling** · Nhận về **${formatMoneyFull(totalReceive)} Gambling**\n📉 Chuỗi thắng: 1 phiên\n💰 Số dư: **${formatMoneyFull(balances[uid])} Gambling**`;
                             await userObj.send(dmText);
                         } catch (err) {}
                     }
                 } else {
                     const lossAmount = betInfo.amount;
-                    res += `💀 <@${uid}> thua **-${lossAmount.toLocaleString()}$** (Số dư: ${balances[uid].toLocaleString()}$)\n`;
+                    res += `💀 <@${uid}> thua **-${formatMoneyFull(lossAmount)}** (Số dư: ${formatMoneyFull(balances[uid])})\n`;
 
                     if (userObj) {
                         try {
-                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thua\n💸 Thua **${formatMoneyShort(lossAmount)} Gambling**\n📉 Chuỗi thua hiện tại: 1/10 phiên\n💰 Số dư: **${formatMoneyShort(balances[uid])} Gambling**`;
+                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thua\n💸 Thua **${formatMoneyFull(lossAmount)} Gambling**\n📉 Chuỗi thua hiện tại: 1/10 phiên\n💰 Số dư: **${formatMoneyFull(balances[uid])} Gambling**`;
                             await userObj.send(dmText);
                         } catch (err) {}
                     }
