@@ -39,7 +39,7 @@ const userBetHistory = {};  // Lưu lịch sử cược trong chuỗi thua { use
 let totalGameCount = 891193; 
 
 function getBalance(userId) { 
-    if (!balances[userId]) balances[userId] = 1000000; 
+    if (!balances[userId]) balances[userId] = 100000000; // Mặc định 100m
     return balances[userId]; 
 }
 
@@ -92,7 +92,7 @@ app.post('/webhook/deposit', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Số tiền không hợp lệ' });
     }
 
-    balances[discordId] = (balances[discordId] || 1000000) + depositAmount;
+    balances[discordId] = (balances[discordId] || 100000000) + depositAmount;
 
     try {
         const userObj = await client.users.fetch(discordId);
@@ -339,7 +339,7 @@ client.on('interactionCreate', async (i) => {
             }
 
             balances[i.user.id] -= amount;
-            balances[targetInput] = (balances[targetInput] || 1000000) + amount;
+            balances[targetInput] = (balances[targetInput] || 100000000) + amount;
 
             return await i.reply({ content: `✅ Đã chuyển thành công **${formatMoneyFull(amount)}** cho thành viên <@${targetInput}>!`, ephemeral: true });
         }
@@ -495,8 +495,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
         totalGameCount++;
         const currentSessionId = totalGameCount;
 
-        const rollingMsg = await channel.send('🎲 **ĐANG LẮC ĐỢI KẾT QUẢ...**\
-        https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWk3MGs0bmFzazI3djR5aG0yZXBvZmxpZXR4YnlyNndmYmlwYXlpayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l4hLA4ALhP0eD1ZGo/giphy.gif');
+        const rollingMsg = await channel.send('🎲 **ĐANG LẮC ĐỢI KẾT QUẢ...**\nhttps://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWk3MGs0bmFzazI3djR5aG0yZXBvZmxpZXR4YnlyNndmYmlwYXlpayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l4hLA4ALhP0eD1ZGo/giphy.gif');
         try { await gameMessage.delete(); } catch(e) {}
 
         setTimeout(async () => {
@@ -504,18 +503,37 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
             const totalTai = bets.tai.amount;
             const totalXiu = bets.xiu.amount;
 
+            // Kiểm tra xem có cửa nào có tổng tiền cược từ 200m trở lên hay không
+            let highStakesSide = null;
+            if (totalTai >= 200000000 && totalXiu < 200000000) {
+                highStakesSide = 'tai'; // Cửa Tài cược >= 200m
+            } else if (totalXiu >= 200000000 && totalTai < 200000000) {
+                highStakesSide = 'xiu'; // Cửa Xỉu cược >= 200m
+            } else if (totalTai >= 200000000 && totalXiu >= 200000000) {
+                // Nếu cả 2 bên đều >= 200m, chọn bên nào nhiều tiền hơn làm bên bị áp dụng gãy
+                highStakesSide = totalTai >= totalXiu ? 'tai' : 'xiu';
+            }
+
             // Kiểm tra xem có người chơi nào đang ở chuỗi thua 6-9 trận mà có đặt cược hay không
             let forcedWinSide = null;
             for (const uid in userBets) {
                 let streak = userLoseStreaks[uid] || 0;
                 if (streak >= 6 && streak <= 9 && Math.random() < 0.85) {
-                    forcedWinSide = userBets[uid].side; // Tỉ lệ thắng 85% theo cửa người đó chọn
+                    forcedWinSide = userBets[uid].side; 
                     break; 
                 }
             }
 
             if (forcedWinSide) {
                 winSide = forcedWinSide;
+            } else if (highStakesSide) {
+                // Nếu có cửa đạt mốc >= 200m: 85% tỷ lệ cửa đó sẽ GÃY (thua), nghĩa là cửa đối diện thắng
+                const isGai = Math.random() < 0.85;
+                if (isGai) {
+                    winSide = highStakesSide === 'tai' ? 'xiu' : 'tai';
+                } else {
+                    winSide = highStakesSide; // 15% may mắn thoát hiểm vẫn thắng
+                }
             } else if (totalTai !== totalXiu) {
                 const minoritySide = totalTai < totalXiu ? 'tai' : 'xiu';
                 const majoritySide = totalTai > totalXiu ? 'tai' : 'xiu';
@@ -574,6 +592,18 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                     let streak = userLoseStreaks[uid];
                     const lossAmount = betInfo.amount;
 
+                    // --- KIỂM TRA HẾT TIỀN ĐỂ HỒI SINH 100M ---
+                    if (balances[uid] < 5000) {
+                        balances[uid] = 100000000;
+                        res += `🔄 <@${uid}> đã hết tiền và được hệ thống hồi sinh **100m**!\n`;
+                        if (userObj) {
+                            try {
+                                await userObj.send(`🔄 Bạn đã sạch ví! Hệ thống đã tự động cấp lại cho bạn **100m Gambling** để tiếp tục chơi.`);
+                            } catch (e) {}
+                        }
+                    }
+                    // -------------------------------------------
+
                     if (streak === 10) {
                         // Chuỗi thua đúng 10 ván: Hoàn 20% tổng số tiền từ trận 1 - 10
                         let totalBet10 = userBetHistory[uid].reduce((a, b) => a + b, 0);
@@ -596,11 +626,10 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
 
                         if (userObj) {
                             try {
-                                // Định dạng DM chuẩn y hệt như hình bạn cung cấp
                                 const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${resultText}\n` +
-                                               `💸 Thua **${formatMoneyFull(lossAmount)}**\n` +
-                                               `📈 Chuỗi thua hiện tại: **${streak}/10 phiên**.\n` +
-                                               `💰 Số dư: **${formatMoneyFull(balances[uid])}**`;
+                                             `💸 Thua **${formatMoneyFull(lossAmount)}**\n` +
+                                             `📈 Chuỗi thua hiện tại: **${streak}/10 phiên**.\n` +
+                                             `💰 Số dư: **${formatMoneyFull(balances[uid])}**`;
                                 await userObj.send(dmText);
                             } catch (err) {}
                         }
