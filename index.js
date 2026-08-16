@@ -326,6 +326,9 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
             await rollingMsg.edit({ content: null, embeds: [finalEmbed] });
 
             setTimeout(() => {
+                // Tự động xóa tin nhắn kết quả sau 5 giây khi mở phiên mới để kênh sạch sẽ
+                try { rollingMsg.delete(); } catch(e) {}
+
                 if (!activeSessions[channel.id]) {
                     startTaiXiuSession(channel, null);
                 }
