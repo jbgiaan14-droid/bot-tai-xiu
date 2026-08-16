@@ -246,7 +246,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
         const currentSessionId = totalGameCount;
 
         // Gửi thẳng link GIF trực tiếp ra khung chat để hiển thị ảnh động 100%
-        const rollingMsg = await channel.send('🎲 **ĐANG LẮC ĐỢI KẾT QUẢ...**\https://cdn.discordapp.com/attachments/1534127809977516104/1538428234738438144/dice-rolling.gif?ex=6a82a471&is=6a8152f1&hm=2bb62489c7c73ba0fffefd952bd40be436d71432210021684f10eb9da828de1f&)
+        const rollingMsg = await channel.send('🎲 **ĐANG LẮC ĐỢI KẾT QUẢ...**\https://cdn.discordapp.com/attachments/1534127809977516104/1538428234738438144/dice-rolling.gif?ex=6a82a471&is=6a8152f1&hm=2bb62489c7c73ba0fffefd952bd40be436d71432210021684f10eb9da828de1f&')
         try { await gameMessage.delete(); } catch(e) {}
 
         setTimeout(async () => {
