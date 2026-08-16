@@ -26,6 +26,7 @@ const PAY_BOT_NAME = 'giaanday2121'; // Tên bot nhận tiền pay trước
 const balances = {};
 const gameHistory = []; 
 const activeSessions = {};
+const pendingDeposits = {}; // Lưu trữ danh sách đơn nạp đang chờ xử lý
 let totalGameCount = 891193; 
 
 function getBalance(userId) { 
@@ -220,11 +221,21 @@ client.on('interactionCreate', async (i) => {
                 .setTitle('📥 Yêu cầu nạp Gambling')
                 .setDescription(`**${rawAmount.toUpperCase()} Gambling**\n\n👤 **IGN xác nhận:** \`${ign}\`\n💰 **Số tiền:** \`${rawAmount.toUpperCase()} Gambling\`\n⏰ **Hạn chót:** 5 phút tới\n\n📝 **Hướng dẫn:**\nChuyển đúng số Money bằng lệnh:\n\`/pay ${PAY_BOT_NAME} ${rawAmount.toLowerCase()}\`\n\n📌 **Lưu ý:**\n• Hệ thống tự cộng tiền tự động.\n• Vui lòng kiểm tra đúng tên bot trước khi chuyển!`);
             
+            let dmMessage;
             try {
-                await i.user.send({ embeds: [embedDM] });
+                dmMessage = await i.user.send({ embeds: [embedDM] });
             } catch (err) {
                 return await i.reply({ content: '❌ Không thể gửi tin nhắn (DM) cho bạn! Vui lòng mở khóa tin nhắn riêng (Allow direct messages from server members) rồi thử lại.', ephemeral: true });
             }
+
+            // Hẹn giờ 5 phút (300,000 ms) đếm ngược thực tế
+            const depositKey = `${i.user.id}_${Date.now()}`;
+            pendingDeposits[depositKey] = setTimeout(async () => {
+                delete pendingDeposits[depositKey];
+                try {
+                    await i.user.send(`Đã hết hạn 5 phút, yêu cầu nạp ${rawAmount} đã bị hủy`);
+                } catch (e) {}
+            }, 5 * 60 * 1000);
 
             return await i.reply({ content: `Đã gửi 1 tin nhắn (DM) cho bạn, hãy kiểm tra về đơn nạp ${rawAmount}`, ephemeral: true });
         }
