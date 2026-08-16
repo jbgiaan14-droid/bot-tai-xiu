@@ -1,4 +1,10 @@
 const http = require('http');
+const express = require('express');
+
+const app = express();
+app.use(express.json());
+
+// Web server cơ bản cho bot Discord (cổng 3000)
 const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('Bot KingMC Gambling is running!');
@@ -64,6 +70,40 @@ function formatMoneyFull(amount) {
     if (amount >= 1_000) return (amount / 1_000).toFixed(1).replace(/\.0$/, '') + 'k Gambling';
     return amount.toString() + ' Gambling';
 }
+
+// ==================== WEBHOOK NHẬN TIỀN TỪ SERVER GAME (CỔNG 3001) ====================
+app.post('/webhook/deposit', async (req, res) => {
+    const { discordId, amount, ign } = req.body;
+
+    if (!discordId || !amount) {
+        return res.status(400).json({ success: false, message: 'Thiếu thông tin discordId hoặc amount' });
+    }
+
+    const depositAmount = parseInt(amount);
+    if (isNaN(depositAmount) || depositAmount <= 0) {
+        return res.status(400).json({ success: false, message: 'Số tiền không hợp lệ' });
+    }
+
+    // Cộng tiền vào ví của người chơi
+    balances[discordId] = (balances[discordId] || 1000000) + depositAmount;
+
+    // Gửi tin nhắn DM xác nhận nạp thành công
+    try {
+        const userObj = await client.users.fetch(discordId);
+        if (userObj) {
+            await userObj.send(`✅ **NẠP TIỀN THÀNH CÔNG!**\n\n👤 IGN: \`${ign || 'Không rõ'}\`\n💰 Đã cộng thêm: **${formatMoneyFull(depositAmount)}**\n📊 Số dư mới: **${formatMoneyFull(balances[discordId])}**`);
+        }
+    } catch (err) {
+        console.log(`Không thể gửi DM cho user ${discordId}`);
+    }
+
+    return res.json({ success: true, newBalance: balances[discordId] });
+});
+
+app.listen(3001, () => {
+    console.log(`🔗 Webhook lắng nghe nạp tiền chạy tại cổng 3001`);
+});
+// ==================================================================================
 
 client.once('ready', () => {
     console.log(`🤖 Bot ${client.user.tag} đã sẵn sàng hoạt động ổn định!`);
@@ -226,7 +266,7 @@ client.on('interactionCreate', async (i) => {
             try {
                 dmMessage = await i.user.send({ embeds: [embedDM] });
             } catch (err) {
-                return await i.reply({ content: '❌ Không thể gửi tin nhắn (DM) cho bạn! Vui lòng mở khóa tin nhắn riêng (Allow direct messages from server members) rồi thử lại.', ephemeral: true });
+                return await i.reply({ content: '❌ Không thể gửi tin nhắn (DM) cho bạn! Vui lòng mở khóa tin nhắn riêng rồi thử lại.', ephemeral: true });
             }
 
             // Hẹn giờ chính xác 5 phút (300,000 ms) sau đó edit tin nhắn DM thành thông báo hết hạn
