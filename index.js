@@ -17,7 +17,7 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBit
 const balances = {};
 const gameHistory = []; 
 const activeSessions = {};
-let totalGameCount = 739480; 
+let totalGameCount = 891193; // Đồng bộ mã phiên bắt đầu quanh đây
 
 function getBalance(userId) { 
     if (!balances[userId]) balances[userId] = 1000000; 
@@ -49,11 +49,11 @@ function parseMoney(input, userId) {
     return isNaN(num) ? NaN : Math.floor(num * multiplier);
 }
 
-// Hàm format tiền sang dạng k, m, b ngắn gọn (VD: 4.5m, 500k)
+// Hàm format tiền sang dạng k, m, b ngắn gọn (VD: 3.5m, 365.7k)
 function formatMoneyShort(amount) {
     if (amount >= 1_000_000_000) return (amount / 1_000_000_000).toFixed(2).replace(/\.0$/, '') + 'b';
-    if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(2).replace(/\.0$/, '') + 'm';
-    if (amount >= 1_000) return (amount / 1_000).toFixed(2).replace(/\.0$/, '') + 'k';
+    if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'm';
+    if (amount >= 1_000) return (amount / 1_000).toFixed(1).replace(/\.0$/, '') + 'k';
     return amount.toString();
 }
 
@@ -231,7 +231,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
         const rollingEmbed = new EmbedBuilder()
             .setColor(0x3b82f6)
             .setTitle('🎲 ĐANG LẮC ĐỢI KẾT QUẢ...')
-            .setImage('https://media1.giphy.com/media/26tn33aiTi1jkl6H6/giphy.gif'); // Link GIF mới hoạt động ổn định
+            .setImage('https://media1.giphy.com/media/26tn33aiTi1jkl6H6/giphy.gif');
 
         const rollingMsg = await channel.send({ embeds: [rollingEmbed] });
         try { await gameMessage.delete(); } catch(e) {}
@@ -258,9 +258,15 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                 total = d1 + d2 + d3;
             } while ((winSide === 'tai' && total < 11) || (winSide === 'xiu' && total >= 11));
 
+            // Map mặt xúc xắc thành icon
+            const diceEmojis = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+            const d1Str = diceEmojis[d1];
+            const d2Str = diceEmojis[d2];
+            const d3Str = diceEmojis[d3];
+
             gameHistory.push({ dice1: d1, dice2: d2, dice3: d3, total: total, side: total >= 11 ? 'tai' : 'xiu' });
 
-            const resultText = total >= 11 ? '🔴 TÀI' : '🔵 XỈU';
+            const resultText = total >= 11 ? 'TÀI' : 'XỈU';
             let res = `🎲 Kết quả: **${d1} - ${d2} - ${d3}** (Tổng: **${total}** -> **${resultText}**)\n\n`;
 
             for (const uid in userBets) {
@@ -276,7 +282,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
 
                     if (userObj) {
                         try {
-                            const dmText = `Kết quả phiên #${currentSessionId}: ${d1} · ${d2} · ${d3} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thắng · lãi ${formatMoneyShort(profit)} Gambling · nhận về ${formatMoneyShort(totalReceive)} Gambling. Số dư: ${formatMoneyShort(balances[uid])} Gambling`;
+                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thắng\n💸 Lãi **${formatMoneyShort(profit)} Gambling** · Nhận về **${formatMoneyShort(totalReceive)} Gambling**\n📉 Chuỗi thắng: 1 phiên\n💰 Số dư: **${formatMoneyShort(balances[uid])} Gambling**`;
                             await userObj.send(dmText);
                         } catch (err) {}
                     }
@@ -286,7 +292,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
 
                     if (userObj) {
                         try {
-                            const dmText = `Kết quả phiên #${currentSessionId}: ${d1} · ${d2} · ${d3} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thua · mất ${formatMoneyShort(lossAmount)} Gambling. Số dư: ${formatMoneyShort(balances[uid])} Gambling`;
+                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thua\n💸 Thua **${formatMoneyShort(lossAmount)} Gambling**\n📉 Chuỗi thua hiện tại: 1/10 phiên\n💰 Số dư: **${formatMoneyShort(balances[uid])} Gambling**`;
                             await userObj.send(dmText);
                         } catch (err) {}
                     }
