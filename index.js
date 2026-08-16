@@ -2,7 +2,7 @@
 const http = require('http');
 const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Bot KingMC is running!');
+    res.end('Bot KingMC & Jing Gambling is running!');
 });
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
@@ -74,6 +74,33 @@ client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
     const content = message.content.toLowerCase();
 
+    // Lệnh khởi tạo bảng Nạp / Rút chuẩn mẫu Jing Community
+    if (content === '!setupbank') {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return message.reply({ content: '❌ Chỉ có Quản trị viên mới dùng được lệnh này!', ephemeral: true });
+        }
+        try { await message.delete(); } catch(e) {}
+
+        const embed = new EmbedBuilder()
+            .setColor(0x38bdf8)
+            .setTitle('🏛️ JING GAMEBLING\nTRUNG TÂM NẠP & RÚT GAMBLING')
+            .setDescription('🟢 **ONLINE – HỆ THỐNG SẴN SÀNG**\n\n📌 **Chức năng có bot sẵn sàng sẽ tự mở**\nCác bot còn lại có thể online sau mà không làm khóa bot đang hoạt động.\n\n🔒 **Giao dịch an toàn**\nChỉ chuyển sau khi đã tạo yêu cầu. Kiểm tra đúng IGN, số tiền và hướng dẫn được gửi riêng.\n\n⏱️ **Timeout / mất kết nối**\nYêu cầu sẽ tự động hết hạn sau 5 phút nếu không được xác nhận.\n\n🔄 **Cập nhật trạng thái**\nVừa xong\n*Hệ thống tự động • Vui lòng đọc kỹ hướng dẫn*');
+
+        const row1 = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('btn_open_nap').setLabel('Nạp Money').setEmoji('💰').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('btn_open_rut').setLabel('Rút Money').setEmoji('💸').setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId('btn_open_chuyen').setLabel('Chuyển tiền').setEmoji('💳').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId('btn_sodu').setLabel('Số dư').setEmoji('📊').setStyle(ButtonStyle.Primary)
+        );
+
+        const row2 = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('btn_lichsu_giaodich').setLabel('Lịch sử').setEmoji('📜').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId('btn_huongdan').setLabel('Hướng dẫn').setEmoji('❓').setStyle(ButtonStyle.Secondary)
+        );
+
+        return message.channel.send({ embeds: [embed], components: [row1, row2] });
+    }
+
     if (content === '!tx' || content === '!taixiu') {
         if (message.channel.id !== ALLOWED_CHANNEL_ID) {
             return message.reply({ content: `❌ Lệnh này chỉ được dùng tại kênh <#${ALLOWED_CHANNEL_ID}> thôi nhé!`, ephemeral: true });
@@ -94,6 +121,158 @@ client.on('messageCreate', async (message) => {
 
 client.on('interactionCreate', async (i) => {
     const session = activeSessions[i.channelId];
+
+    // Xử lý các nút bấm trong bảng Ngân hàng (Nạp, Rút, Chuyển, Số dư, Lịch sử, Hướng dẫn)
+    if (i.isButton()) {
+        if (i.customId === 'btn_open_nap') {
+            const modal = new ModalBuilder().setCustomId('modal_nap').setTitle('YÊU CẦU NẠP MONEY');
+            const input = new TextInputBuilder()
+                .setCustomId('nap_amount')
+                .setLabel('Nhập số tiền muốn nạp:')
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder('VD: 50000, 100k, 1m')
+                .setRequired(true);
+            modal.addComponents(new ActionRowBuilder().addComponents(input));
+            return await i.showModal(modal);
+        }
+
+        if (i.customId === 'btn_open_rut') {
+            const modal = new ModalBuilder().setCustomId('modal_rut').setTitle('YÊU CẦU RÚT MONEY');
+            const amountInput = new TextInputBuilder()
+                .setCustomId('rut_amount')
+                .setLabel('Số tiền Gambling muốn rút:')
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder('VD: 500k, 1m')
+                .setRequired(true);
+            const infoInput = new TextInputBuilder()
+                .setCustomId('rut_info')
+                .setLabel('Thông tin nhận (Ngân hàng / Momo / STK):')
+                .setStyle(TextInputStyle.Paragraph)
+                .setPlaceholder('VD: MB Bank - 0123456789 - Pham Van Huong')
+                .setRequired(true);
+            modal.addComponents(new ActionRowBuilder().addComponents(amountInput), new ActionRowBuilder().addComponents(infoInput));
+            return await i.showModal(modal);
+        }
+
+        if (i.customId === 'btn_open_chuyen') {
+            const modal = new ModalBuilder().setCustomId('modal_chuyen').setTitle('CHUYỂN TIỀN CHO NGƯỜI KHÁC');
+            const targetInput = new TextInputBuilder()
+                .setCustomId('chuyen_target')
+                .setLabel('ID hoặc Mention người nhận:')
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder('VD: 123456789012345678')
+                .setRequired(true);
+            const amountInput = new TextInputBuilder()
+                .setCustomId('chuyen_amount')
+                .setLabel('Số tiền muốn chuyển:')
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder('VD: 100k, 1m')
+                .setRequired(true);
+            modal.addComponents(new ActionRowBuilder().addComponents(targetInput), new ActionRowBuilder().addComponents(amountInput));
+            return await i.showModal(modal);
+        }
+
+        if (i.customId === 'btn_sodu') {
+            const bal = getBalance(i.user.id);
+            return i.reply({ content: `📊 Số dư hiện tại của bạn: **${formatMoneyFull(bal)}**`, ephemeral: true });
+        }
+
+        if (i.customId === 'btn_lichsu_giaodich') {
+            return i.reply({ content: `📜 Bạn chưa có giao dịch nạp/rút nào gần đây.`, ephemeral: true });
+        }
+
+        if (i.customId === 'btn_huongdan') {
+            const embed = new EmbedBuilder()
+                .setColor(0xfacc15)
+                .setTitle('📖 HƯỚNG DẪN SỬ DỤNG HỆ THỐNG')
+                .setDescription('• **Nạp Money**: Điền số tiền cần nạp, bot sẽ cung cấp mã nội dung và thông tin chuyển khoản.\n• **Rút Money**: Điền số tiền và thông tin tài khoản nhận, Admin sẽ duyệt và chuyển khoản cho bạn.\n• **Chuyển tiền**: Chuyển trực tiếp Gambling coin cho thành viên khác trong server.\n• **Tài Xỉu**: Tham gia chơi tại kênh `#gambling🎲`.');
+            return i.reply({ embeds: [embed], ephemeral: true });
+        }
+
+        if (i.customId.startsWith('approve_rut_')) {
+            if (!i.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+                return i.reply({ content: '❌ Bạn không có quyền duyệt lệnh này!', ephemeral: true });
+            }
+            const targetUserId = i.customId.replace('approve_rut_', '');
+            await i.update({ content: `✅ **ĐÃ DUYỆT** lệnh rút tiền cho <@${targetUserId}> bởi Admin <@${i.user.id}>.`, components: [] });
+            return;
+        }
+
+        if (i.customId.startsWith('reject_rut_')) {
+            if (!i.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+                return i.reply({ content: '❌ Bạn không có quyền từ chối lệnh này!', ephemeral: true });
+            }
+            const targetUserId = i.customId.replace('reject_rut_', '');
+            await i.update({ content: `❌ **ĐÃ TỪ CHỐI** lệnh rút tiền của <@${targetUserId}> bởi Admin <@${i.user.id}>.`, components: [] });
+            return;
+        }
+    }
+
+    // Xử lý Modal Nạp, Rút, Chuyển tiền
+    if (i.isModalSubmit()) {
+        if (i.customId === 'modal_nap') {
+            const rawAmount = i.fields.getTextInputValue('nap_amount');
+            const codeNap = `JING${Math.floor(1000 + Math.random() * 9000)}`;
+            
+            const embed = new EmbedBuilder()
+                .setColor(0x22c55e)
+                .setTitle('💳 HÓA ĐƠN NẠP MONEY')
+                .setDescription(`👤 **Người tạo:** <@${i.user.id}>\n💵 **Số tiền yêu cầu:** **${rawAmount}**\n🔑 **Nội dung chuyển khoản:** \`${codeNap}\`\n\n🏦 **Thông tin tài khoản:**\n• Ngân hàng: **MB Bank**\n• Số tài khoản: \`0123456789\`\n• Chủ tài khoản: **PHAM VAN HUONG**\n\n*Hết hạn sau 5 phút nếu không giao dịch.*`);
+            
+            return await i.reply({ embeds: [embed], ephemeral: true });
+        }
+
+        if (i.customId === 'modal_rut') {
+            const rawAmount = i.fields.getTextInputValue('rut_amount');
+            const rutInfo = i.fields.getTextInputValue('rut_info');
+            let amount = parseMoney(rawAmount, i.user.id);
+
+            if (isNaN(amount) || amount <= 0) {
+                return i.reply({ content: '❌ Số tiền rút không hợp lệ!', ephemeral: true });
+            }
+            if (getBalance(i.user.id) < amount) {
+                return i.reply({ content: `❌ Số dư không đủ! Số dư hiện tại: ${formatMoneyFull(getBalance(i.user.id))}`, ephemeral: true });
+            }
+
+            balances[i.user.id] -= amount;
+
+            const embedAdmin = new EmbedBuilder()
+                .setColor(0xef4444)
+                .setTitle('💸 YÊU CẦU RÚT MONEY MỚI')
+                .setDescription(`👤 **Thành viên:** <@${i.user.id}>\n💰 **Số tiền rút:** **${formatMoneyFull(amount)}**\n📋 **Thông tin nhận:**\n\`\`\`${rutInfo}\`\`\``)
+                .setTimestamp();
+
+            const rowAdmin = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId(`approve_rut_${i.user.id}`).setLabel('Duyệt').setStyle(ButtonStyle.Success),
+                new ButtonBuilder().setCustomId(`reject_rut_${i.user.id}`).setLabel('Từ chối (Hoàn tiền)').setStyle(ButtonStyle.Danger)
+            );
+
+            await i.channel.send({ content: `🔔 Có yêu cầu rút tiền mới gửi đến Admin!`, embeds: [embedAdmin], components: [rowAdmin] }).catch(() => {});
+
+            return await i.reply({ content: `✅ Đã tạo yêu cầu rút **${formatMoneyFull(amount)}** thành công!`, ephemeral: true });
+        }
+
+        if (i.customId === 'modal_chuyen') {
+            let targetInput = i.fields.getTextInputValue('chuyen_target').replace(/[<@!>]/g, '').trim();
+            const rawAmount = i.fields.getTextInputValue('chuyen_amount');
+            let amount = parseMoney(rawAmount, i.user.id);
+
+            if (isNaN(amount) || amount <= 0) {
+                return i.reply({ content: '❌ Số tiền chuyển không hợp lệ!', ephemeral: true });
+            }
+            if (getBalance(i.user.id) < amount) {
+                return i.reply({ content: `❌ Số dư của bạn không đủ để chuyển!`, ephemeral: true });
+            }
+            if (targetInput === i.user.id) {
+                return i.reply({ content: `❌ Bạn không thể tự chuyển tiền cho chính mình!`, ephemeral: true });
+            }
+
+            balances[i.user.id] -= amount;
+            balances[targetInput] = (balances[targetInput] || 1000000) + amount;
+
+            return await i.reply({ content: `✅ Đã chuyển thành công **${formatMoneyFull(amount)}** cho thành viên <@${targetInput}>!`, ephemeral: true });
+        }
+    }
 
     if (i.isButton() && (i.customId === 'bet_tai' || i.customId === 'bet_xiu')) {
         if (!session) return i.reply({ content: '❌ Phiên đã kết thúc!', ephemeral: true });
@@ -245,8 +424,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
         totalGameCount++;
         const currentSessionId = totalGameCount;
 
-        // Gửi thẳng link GIF trực tiếp ra khung chat để hiển thị ảnh động 100%
-        const rollingMsg = await channel.send('🎲 **ĐANG LẮC ĐỢI KẾT QUẢ...**\https://cdn.discordapp.com/attachments/1534127809977516104/1538428234738438144/dice-rolling.gif?ex=6a82a471&is=6a8152f1&hm=2bb62489c7c73ba0fffefd952bd40be436d71432210021684f10eb9da828de1f&')
+        const rollingMsg = await channel.send('🎲 **ĐANG LẮC ĐỢI KẾT QUẢ...**\nhttps://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWk3MGs0bmFzazI3djR5aG0yZXBvZmxpZXR4YnlyNndmYmlwYXlpayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l4hLA4ALhP0eD1ZGo/giphy.gif');
         try { await gameMessage.delete(); } catch(e) {}
 
         setTimeout(async () => {
@@ -287,7 +465,6 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                 const userObj = await client.users.fetch(uid).catch(() => null);
 
                 if (isWin) {
-                    // Tỷ lệ chuẩn x1.9
                     const totalReceive = Math.floor(betInfo.amount * 1.9); 
                     const profit = totalReceive - betInfo.amount;          
 
@@ -326,7 +503,6 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
             await rollingMsg.edit({ content: null, embeds: [finalEmbed] });
 
             setTimeout(() => {
-                // Tự động xóa tin nhắn kết quả sau 5 giây khi mở phiên mới để kênh sạch sẽ
                 try { rollingMsg.delete(); } catch(e) {}
 
                 if (!activeSessions[channel.id]) {
