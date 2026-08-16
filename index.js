@@ -6,25 +6,25 @@ http.createServer((req, res) => {
 }).listen(process.env.PORT || 3000);
 
 // ==========================================
-// DÁN TOKEN BOT CỦA BẠN VÀO DƯỚI ĐÂY (Hoặc dùng biến môi trường)
+// CẤU HÌNH CƠ BẢN
 const BOT_TOKEN = process.env.BOT_TOKEN;
+const ALLOWED_CHANNEL_ID = '1538197175731748894'; // 👈 Thay ID kênh chat game chuẩn của ông vào đây nhé!
 // ==========================================
 
-const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
 
 const balances = {};
 const gameHistory = []; 
 const activeSessions = {};
-let totalGameCount = 891193; // Đồng bộ mã phiên bắt đầu quanh đây
+let totalGameCount = 891193; 
 
 function getBalance(userId) { 
     if (!balances[userId]) balances[userId] = 1000000; 
     return balances[userId]; 
 }
 
-// --- HÀM XỬ LÝ TIỀN THÔNG MINH (Hỗ trợ k, m, b, all) ---
 function parseMoney(input, userId) {
     if (!input) return NaN;
     let str = input.toString().toLowerCase().trim();
@@ -49,7 +49,6 @@ function parseMoney(input, userId) {
     return isNaN(num) ? NaN : Math.floor(num * multiplier);
 }
 
-// Hàm format tiền sang dạng k, m, b ngắn gọn (VD: 3.5m, 365.7k)
 function formatMoneyShort(amount) {
     if (amount >= 1_000_000_000) return (amount / 1_000_000_000).toFixed(2).replace(/\.0$/, '') + 'b';
     if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'm';
@@ -70,9 +69,20 @@ client.on('messageCreate', async (message) => {
     const content = message.content.toLowerCase();
 
     if (content === '!tx' || content === '!taixiu') {
+        // 1. Kiểm tra đúng kênh được phép chơi chưa
+        if (message.channel.id !== ALLOWED_CHANNEL_ID) {
+            return message.reply({ content: `❌ Lệnh này chỉ được dùng tại kênh <#${ALLOWED_CHANNEL_ID}> thôi nhé!`, ephemeral: true });
+        }
+
+        // 2. Kiểm tra quyền Admin (Chỉ Admin server mới được gõ lệnh mở game)
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return message.reply({ content: '❌ Chỉ có Quản trị viên (Admin) mới có quyền khởi tạo phiên Tài Xỉu!', ephemeral: true });
+        }
+
         if (activeSessions[message.channel.id]) {
             return message.reply({ content: '⚠️ Phiên tài xỉu đang chạy trong kênh này rồi!', ephemeral: true });
         }
+
         try { await message.delete(); } catch(e) {}
         startTaiXiuSession(message.channel);
     }
@@ -258,7 +268,6 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                 total = d1 + d2 + d3;
             } while ((winSide === 'tai' && total < 11) || (winSide === 'xiu' && total >= 11));
 
-            // Map mặt xúc xắc thành icon
             const diceEmojis = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
             const d1Str = diceEmojis[d1];
             const d2Str = diceEmojis[d2];
@@ -282,7 +291,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
 
                     if (userObj) {
                         try {
-                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thắng\n💸 Lãi **${formatMoneyShort(profit)} Gambling** · Nhận về **${formatMoneyShort(totalReceive)} Gambling**\n📉 Chuỗi thắng: 1 phiên\n💰 Số dư: **${formatMoneyShort(balances[uid])} Gambling**`;
+                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thắng\n💵 Lãi **${formatMoneyShort(profit)} Gambling** · Nhận về **${formatMoneyShort(totalReceive)} Gambling**\n📉 Chuỗi thắng: 1 phiên\n💰 Số dư: **${formatMoneyShort(balances[uid])} Gambling**`;
                             await userObj.send(dmText);
                         } catch (err) {}
                     }
