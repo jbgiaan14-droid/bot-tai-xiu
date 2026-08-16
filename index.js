@@ -1,4 +1,3 @@
-// --- MÁY CHỦ HTTP ẢO ĐỂ RENDER GIỮ CHO SERVICE SỐNG ---
 const http = require('http');
 const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -120,7 +119,7 @@ client.on('interactionCreate', async (i) => {
     const session = activeSessions[i.channelId];
 
     if (i.isButton()) {
-        // --- 1. MODAL NẠP GAMBLING (Hình 1) ---
+        // --- 1. MODAL NẠP GAMBLING ---
         if (i.customId === 'btn_open_nap') {
             const modal = new ModalBuilder().setCustomId('modal_nap').setTitle('NẠP GAMBLING');
             const ignInput = new TextInputBuilder()
@@ -139,7 +138,7 @@ client.on('interactionCreate', async (i) => {
             return await i.showModal(modal);
         }
 
-        // --- 2. MODAL RÚT GAMBLING (Hình 2) ---
+        // --- 2. MODAL RÚT GAMBLING ---
         if (i.customId === 'btn_open_rut') {
             const modal = new ModalBuilder().setCustomId('modal_rut').setTitle('RÚT GAMBLING');
             const ignInput = new TextInputBuilder()
@@ -158,7 +157,7 @@ client.on('interactionCreate', async (i) => {
             return await i.showModal(modal);
         }
 
-        // --- 3. MODAL CHUYỂN TIỀN GAMBLING (Hình 3) ---
+        // --- 3. MODAL CHUYỂN TIỀN GAMBLING ---
         if (i.customId === 'btn_open_chuyen') {
             const modal = new ModalBuilder().setCustomId('modal_chuyen').setTitle('CHUYỂN TIỀN GAMBLING');
             const targetInput = new TextInputBuilder()
@@ -219,12 +218,18 @@ client.on('interactionCreate', async (i) => {
             const rawAmount = i.fields.getTextInputValue('nap_amount');
             const codeNap = `KMC${Math.floor(1000 + Math.random() * 9000)}`;
             
-            const embed = new EmbedBuilder()
+            const embedDM = new EmbedBuilder()
                 .setColor(0x22c55e)
                 .setTitle('💳 YÊU CẦU NẠP GAMBLING')
                 .setDescription(`👤 **Người tạo:** <@${i.user.id}>\n🎮 **IGN:** \`${ign}\`\n🎁 **Số lượng:** **${rawAmount}**\n🔑 **Mã xác nhận nội bộ:** \`${codeNap}\`\n\n📌 **Hướng dẫn:**\nĐưa mã \`${codeNap}\` cho Bot KingMC Gambling hoặc Admin trong server để hoàn tất.\n\n*Hết hạn sau 5 phút.*`);
             
-            return await i.reply({ embeds: [embed], ephemeral: true });
+            try {
+                await i.user.send({ embeds: [embedDM] });
+            } catch (err) {
+                return await i.reply({ content: '❌ Không thể gửi tin nhắn (DM) cho bạn! Vui lòng mở khóa tin nhắn riêng (Allow direct messages from server members) rồi thử lại.', ephemeral: true });
+            }
+
+            return await i.reply({ content: `Đã gửi 1 tin nhắn (DM) cho bạn, hãy kiểm tra về đơn nạp ${rawAmount}`, ephemeral: true });
         }
 
         if (i.customId === 'modal_rut') {
