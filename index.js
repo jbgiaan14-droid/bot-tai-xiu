@@ -1,19 +1,29 @@
-// --- BẬT MÁY CHỦ HTTP ẢO ĐỂ RENDER KHÔNG BÁO LỖI ---
+// --- MÁY CHỦ HTTP ẢO ĐỂ RENDER GIỮ CHO SERVICE SỐNG ---
 const http = require('http');
-http.createServer((req, res) => {
+const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('Bot KingMC is running!');
-}).listen(process.env.PORT || 3000);
+});
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`🌐 Web server đang chạy trên cổng ${PORT}`);
+});
 
 // ==========================================
-// CẤU HÌNH CƠ BẢN
-const BOT_TOKEN = process.env.BOT_TOKEN;
-const ALLOWED_CHANNEL_ID = '1538197175731748894'; // Kênh #gambling🎲 của ông
-// ==========================================
-
+// CẤU HÌNH BOT DISCORD
 const { Client, GatewayIntentBits, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
+const client = new Client({ 
+    intents: [
+        GatewayIntentBits.Guilds, 
+        GatewayIntentBits.GuildMessages, 
+        GatewayIntentBits.MessageContent, 
+        GatewayIntentBits.DirectMessages
+    ] 
+});
+
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const ALLOWED_CHANNEL_ID = '1538197175731748894'; // Kênh #gambling🎲
 
 const balances = {};
 const gameHistory = []; 
@@ -57,11 +67,7 @@ function formatMoneyFull(amount) {
 }
 
 client.once('ready', () => {
-    for (const channelId in activeSessions) {
-        if (activeSessions[channelId].timer) clearInterval(activeSessions[channelId].timer);
-    }
-    Object.keys(activeSessions).forEach(key => delete activeSessions[key]);
-    console.log(`🤖 Bot KingMC Gambling đã sẵn sàng hoạt động ổn định!`);
+    console.log(`🤖 Bot ${client.user.tag} đã sẵn sàng hoạt động ổn định!`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -183,22 +189,25 @@ async function startTaiXiuSession(channel, previousMsg = null) {
             const totalBetAmount = this.bets.tai.amount + this.bets.xiu.amount;
             return new EmbedBuilder()
                 .setColor(isLocked ? 0xef4444 : 0xf59e0b)
-                .setTitle('🎲 KINGMC GAMBLING - TÀI XỈU TỰ ĐỘNG')
-                .setDescription(`Nhấn nút bên dưới để mở bảng nhập số tiền cược tùy ý.\n*(Hỗ trợ viết tắt: k, m, b - VD: 1m, 20m, 10b, 500k)*\n\n💰 Tổng cược: **${formatMoneyFull(totalBetAmount)}**`)
+                .setTitle('🎲 TÀI XỈU KINGMC')
+                .setDescription(`⏱️ **Thời gian còn lại:** ${isLocked ? '🔒 Đã khóa cược!' : `${this.timeLeft}s`}\n\nChọn cửa đặt cược trước khi thời gian hết.\n\n💵 Giới hạn: **500k - 100m Gambling**\n💰 Tổng cược: **${formatMoneyFull(totalBetAmount)}**`)
                 .addFields(
-                    { name: '🔴 TÀI', value: `💰 ${formatMoneyFull(this.bets.tai.amount)} (${this.bets.tai.users.size} người)`, inline: true },
-                    { name: '🔵 XỈU', value: `💰 ${formatMoneyFull(this.bets.xiu.amount)} (${this.bets.xiu.users.size} người)`, inline: true },
-                    { name: '⏳ Trạng thái', value: isLocked ? '🔒 Đã khóa, chuẩn bị lắc!' : `⏱️ Còn lại: ${this.timeLeft}s` }
-                );
+                    { name: '🔴 TÀI', value: `💰 ${formatMoneyFull(this.bets.tai.amount)}\n👥 ${this.bets.tai.users.size} người chơi`, inline: true },
+                    { name: '🔵 XỈU', value: `💰 ${formatMoneyFull(this.bets.xiu.amount)}\n👥 ${this.bets.xiu.users.size} người chơi`, inline: true }
+                )
+                .setFooter({ text: `Tài/Xỉu x1.9 • Chơi có trách nhiệm` })
+                .setTimestamp();
         },
         getComponents(isLocked = false) {
             return [
                 new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId('bet_tai').setLabel('🔴 Tài').setStyle(ButtonStyle.Danger).setDisabled(isLocked),
-                    new ButtonBuilder().setCustomId('bet_xiu').setLabel('🔵 Xỉu').setStyle(ButtonStyle.Primary).setDisabled(isLocked),
-                    new ButtonBuilder().setCustomId('btn_sodu').setLabel('📊 Số Dư').setStyle(ButtonStyle.Secondary),
-                    new ButtonBuilder().setCustomId('btn_lichsu').setLabel('📈 Lịch Sử').setStyle(ButtonStyle.Secondary),
-                    new ButtonBuilder().setCustomId('btn_bxh').setLabel('🏆 BXH').setStyle(ButtonStyle.Success)
+                    new ButtonBuilder().setCustomId('bet_tai').setLabel('Tài').setEmoji('🔴').setStyle(ButtonStyle.Danger).setDisabled(isLocked),
+                    new ButtonBuilder().setCustomId('bet_xiu').setLabel('Xỉu').setEmoji('🔵').setStyle(ButtonStyle.Primary).setDisabled(isLocked),
+                    new ButtonBuilder().setCustomId('btn_sodu').setLabel('Số Dư').setEmoji('📊').setStyle(ButtonStyle.Secondary)
+                ),
+                new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId('btn_lichsu').setLabel('Lịch Sử').setEmoji('📈').setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder().setCustomId('btn_bxh').setLabel('BXH').setEmoji('🏆').setStyle(ButtonStyle.Success)
                 )
             ];
         }
@@ -239,7 +248,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
         const rollingEmbed = new EmbedBuilder()
             .setColor(0x3b82f6)
             .setTitle('🎲 ĐANG LẮC ĐỢI KẾT QUẢ...')
-            .setImage('https://media1.giphy.com/media/26tn33aiTi1jkl6H6/giphy.gif');
+            .setImage('https://i.imgur.com/43p2M2v.gif'); // Link GIF lắc xúc xắc chuẩn mới
 
         const rollingMsg = await channel.send({ embeds: [rollingEmbed] });
         try { await gameMessage.delete(); } catch(e) {}
@@ -282,15 +291,14 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                 const userObj = await client.users.fetch(uid).catch(() => null);
 
                 if (isWin) {
-                    // Tỷ lệ thắng x1.9 (Lãi = cược * 0.9, Tổng nhận về = cược * 1.9)
-                    const profit = Math.floor(betInfo.amount * 0.9); 
-                    const totalReceive = Math.floor(betInfo.amount * 1.9); 
+                    const profit = betInfo.amount; 
+                    const totalReceive = betInfo.amount * 2; 
                     balances[uid] += totalReceive;
                     res += `🎉 <@${uid}> thắng **+${formatMoneyFull(totalReceive)}** (Số dư: ${formatMoneyFull(balances[uid])})\n`;
 
                     if (userObj) {
                         try {
-                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thắng\n💵 Lãi **${formatMoneyFull(profit)} Gambling** · Nhận về **${formatMoneyFull(totalReceive)} Gambling**\n📉 Chuỗi thắng: 1 phiên\n💰 Số dư: **${formatMoneyFull(balances[uid])} Gambling**`;
+                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thắng\n💵 Lãi **${formatMoneyFull(profit)}** · Nhận về **${formatMoneyFull(totalReceive)}**\n💰 Số dư: **${formatMoneyFull(balances[uid])}**`;
                             await userObj.send(dmText);
                         } catch (err) {}
                     }
@@ -300,7 +308,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
 
                     if (userObj) {
                         try {
-                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thua\n💸 Thua **${formatMoneyFull(lossAmount)} Gambling**\n📉 Chuỗi thua hiện tại: 1/10 phiên\n💰 Số dư: **${formatMoneyFull(balances[uid])} Gambling**`;
+                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thua\n💸 Thua **${formatMoneyFull(lossAmount)}**\n💰 Số dư: **${formatMoneyFull(balances[uid])}**`;
                             await userObj.send(dmText);
                         } catch (err) {}
                     }
