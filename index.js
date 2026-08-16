@@ -1,5 +1,12 @@
+// --- BẬT MÁY CHỦ HTTP ẢO ĐỂ RENDER KHÔNG BÁO LỖI ---
+const http = require('http');
+http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Bot KingMC is running!');
+}).listen(process.env.PORT || 3000);
+
 // ==========================================
-// DÁN TOKEN BOT CỦA BẠN VÀO DƯỚI ĐÂY
+// DÁN TOKEN BOT CỦA BẠN VÀO DƯỚI ĐÂY (Hoặc dùng biến môi trường)
 const BOT_TOKEN = process.env.BOT_TOKEN;
 // ==========================================
 
@@ -16,7 +23,7 @@ function getBalance(userId) {
     return balances[userId]; 
 }
 
-// --- HÀM XỬ LÝ TIỀN THÔNG MINH (Hỗ trợ k, m, b) ---
+// --- HÀM XỬ LÝ TIỀN THÔNG MINH (Hỗ trợ k, m, b, all) ---
 function parseMoney(input, userId) {
     if (!input) return NaN;
     let str = input.toString().toLowerCase().trim();
@@ -41,7 +48,7 @@ function parseMoney(input, userId) {
     return isNaN(num) ? NaN : Math.floor(num * multiplier);
 }
 
-client.on('ready', () => console.log(`🤖 Bot KingMC Gambling đã sẵn sàng với tính năng nhập tiền tự do!`));
+client.once('ready', () => console.log(`🤖 Bot KingMC Gambling đã sẵn sàng với tính năng nhập tiền tự do!`));
 
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
@@ -157,7 +164,7 @@ async function startTaiXiuSession(channel, previousMsg = null) {
             return new EmbedBuilder()
                 .setColor(isLocked ? 0xef4444 : 0xf59e0b)
                 .setTitle('🎲 KINGMC GAMBLING - TÀI XỈU TỰ ĐỘNG')
-                .setDescription(`Nhấn nút bên dưới để mở bảng nhập số tiền cược tùy ý.\n*(Hỗ trợ viết tắt: k, m, b - VD: 1m, 2m, 10b)*\n\n💰 Tổng cược: **${(this.bets.tai.amount + this.bets.xiu.amount).toLocaleString()}$**`)
+                .setDescription(`Nhấn nút bên dưới để mở bảng nhập số tiền cược tùy ý.\n*(Hỗ trợ viết tắt: k, m, b - VD: 1m, 2m, 10b, 500k)*\n\n💰 Tổng cược: **${(this.bets.tai.amount + this.bets.xiu.amount).toLocaleString()}$**`)
                 .addFields(
                     { name: '🔴 TÀI', value: `💰 ${this.bets.tai.amount.toLocaleString()}$ (${this.bets.tai.users.size} người)`, inline: true },
                     { name: '🔵 XỈU', value: `💰 ${this.bets.xiu.amount.toLocaleString()}$ (${this.bets.xiu.users.size} người)`, inline: true },
