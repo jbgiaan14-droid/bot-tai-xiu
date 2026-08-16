@@ -74,15 +74,6 @@ function formatMoneyFull(amount) {
     return amount.toString() + ' Gambling';
 }
 
-// Hàm phụ tạo xúc xắc dựa trên tổng số điểm yêu cầu
-function getDiceBySum(sum) {
-    let d1 = Math.floor(Math.random() * 6) + 1;
-    let d2 = Math.floor(Math.random() * 6) + 1;
-    let d3 = sum - d1 - d2;
-    if (d3 < 1 || d3 > 6) return getDiceBySum(sum); // Đệ quy lại nếu xúc xắc nằm ngoài khoảng 1-6
-    return [d1, d2, d3];
-}
-
 // ==================== WEBHOOK NHẬN TIỀN TỪ LOG SCANNER TRONG GAME (CỔNG 3001) ====================
 app.post('/webhook/deposit', async (req, res) => {
     let { discordId, amount, ign } = req.body;
@@ -604,7 +595,11 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
 
                         if (userObj) {
                             try {
-                                const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thua\n💸 Thua **${formatMoneyFull(lossAmount)}** (Chuỗi thua: ${streak})\n💰 Số dư: **${formatMoneyFull(balances[uid])}**`;
+                                // Định dạng DM chuẩn y hệt như hình bạn cung cấp
+                                const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${resultText}\n` +
+                                               `💸 Thua **${formatMoneyFull(lossAmount)}**\n` +
+                                               `📈 Chuỗi thua hiện tại: **${streak}/10 phiên**.\n` +
+                                               `💰 Số dư: **${formatMoneyFull(balances[uid])}**`;
                                 await userObj.send(dmText);
                             } catch (err) {}
                         }
