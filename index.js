@@ -16,6 +16,31 @@ function getBalance(userId) {
     return balances[userId]; 
 }
 
+// --- HÀM XỬ LÝ TIỀN THÔNG MINH (Hỗ trợ k, m, b) ---
+function parseMoney(input, userId) {
+    if (!input) return NaN;
+    let str = input.toString().toLowerCase().trim();
+    
+    if (str === 'all' || str === 'allin') {
+        return getBalance(userId);
+    }
+
+    let multiplier = 1;
+    if (str.endsWith('k')) {
+        multiplier = 1_000;
+        str = str.slice(0, -1);
+    } else if (str.endsWith('m')) {
+        multiplier = 1_000_000;
+        str = str.slice(0, -1);
+    } else if (str.endsWith('b')) {
+        multiplier = 1_000_000_000;
+        str = str.slice(0, -1);
+    }
+
+    let num = parseFloat(str);
+    return isNaN(num) ? NaN : Math.floor(num * multiplier);
+}
+
 client.on('ready', () => console.log(`🤖 Bot KingMC Gambling đã sẵn sàng với tính năng nhập tiền tự do!`));
 
 client.on('messageCreate', async (message) => {
@@ -50,7 +75,7 @@ client.on('interactionCreate', async (i) => {
             .setCustomId('amount_input')
             .setLabel('Nhập số tiền bạn muốn cược:')
             .setStyle(TextInputStyle.Short)
-            .setPlaceholder('VD: 50000 hoặc 1000000')
+            .setPlaceholder('VD: 1m, 2m, 3m, 10b hoặc 500k')
             .setRequired(true);
 
         modal.addComponents(new ActionRowBuilder().addComponents(amountInput));
@@ -63,10 +88,12 @@ client.on('interactionCreate', async (i) => {
 
         const side = i.customId.replace('modal_bet_', '');
         const rawAmount = i.fields.getTextInputValue('amount_input').trim();
-        let amount = rawAmount.toLowerCase() === 'all' || rawAmount.toLowerCase() === 'allin' ? getBalance(i.user.id) : parseInt(rawAmount);
+        
+        // Gọi hàm parseMoney để hỗ trợ gõ 1m, 2m, 3m, 10b,...
+        let amount = parseMoney(rawAmount, i.user.id);
 
         if (isNaN(amount) || amount < 5000) {
-            return i.reply({ content: '❌ Vui lòng nhập số tiền hợp lệ (tối thiểu 5,000$)!', ephemeral: true });
+            return i.reply({ content: '❌ Vui lòng nhập số tiền hợp lệ (tối thiểu 5,000$, hỗ trợ: k, m, b)!', ephemeral: true });
         }
         if (getBalance(i.user.id) < amount) {
             return i.reply({ content: `❌ Bạn không đủ tiền! Số dư hiện tại: ${getBalance(i.user.id).toLocaleString()}$`, ephemeral: true });
@@ -130,7 +157,7 @@ async function startTaiXiuSession(channel, previousMsg = null) {
             return new EmbedBuilder()
                 .setColor(isLocked ? 0xef4444 : 0xf59e0b)
                 .setTitle('🎲 KINGMC GAMBLING - TÀI XỈU TỰ ĐỘNG')
-                .setDescription(`Nhấn nút bên dưới để mở bảng nhập số tiền cược tùy ý.\n\n💰 Tổng cược: **${(this.bets.tai.amount + this.bets.xiu.amount).toLocaleString()}$**`)
+                .setDescription(`Nhấn nút bên dưới để mở bảng nhập số tiền cược tùy ý.\n*(Hỗ trợ viết tắt: k, m, b - VD: 1m, 2m, 10b)*\n\n💰 Tổng cược: **${(this.bets.tai.amount + this.bets.xiu.amount).toLocaleString()}$**`)
                 .addFields(
                     { name: '🔴 TÀI', value: `💰 ${this.bets.tai.amount.toLocaleString()}$ (${this.bets.tai.users.size} người)`, inline: true },
                     { name: '🔵 XỈU', value: `💰 ${this.bets.xiu.amount.toLocaleString()}$ (${this.bets.xiu.users.size} người)`, inline: true },
