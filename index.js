@@ -8,10 +8,10 @@ http.createServer((req, res) => {
 // ==========================================
 // CẤU HÌNH CƠ BẢN
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const ALLOWED_CHANNEL_ID = '1538197175731748894'; // ID kênh #gambling🎲 của ông
+const ALLOWED_CHANNEL_ID = '1538197175731748894'; // Kênh #gambling🎲 của ông
 // ==========================================
 
-const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
 
@@ -49,6 +49,7 @@ function parseMoney(input, userId) {
     return isNaN(num) ? NaN : Math.floor(num * multiplier);
 }
 
+// Hàm format tiền đầy đủ kèm chữ Gambling (Ví dụ: 500k Gambling, 20m Gambling, 10b Gambling)
 function formatMoneyFull(amount) {
     if (amount >= 1_000_000_000) return (amount / 1_000_000_000).toFixed(2).replace(/\.0$/, '') + 'b Gambling';
     if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'm Gambling';
@@ -69,9 +70,12 @@ client.on('messageCreate', async (message) => {
     const content = message.content.toLowerCase();
 
     if (content === '!tx' || content === '!taixiu') {
-        // Chỉ giới hạn đúng kênh chỉ định để tránh member quậy các kênh khác
         if (message.channel.id !== ALLOWED_CHANNEL_ID) {
             return message.reply({ content: `❌ Lệnh này chỉ được dùng tại kênh <#${ALLOWED_CHANNEL_ID}> thôi nhé!`, ephemeral: true });
+        }
+
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return message.reply({ content: '❌ Chỉ có Quản trị viên (Admin) mới có quyền khởi tạo phiên Tài Xỉu!', ephemeral: true });
         }
 
         if (activeSessions[message.channel.id]) {
@@ -279,8 +283,8 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                 const userObj = await client.users.fetch(uid).catch(() => null);
 
                 if (isWin) {
-                    const profit = Math.floor(betInfo.amount * 0.9); 
-                    const totalReceive = Math.floor(betInfo.amount * 1.9); 
+                    const profit = betInfo.amount; 
+                    const totalReceive = betInfo.amount * 2; 
                     balances[uid] += totalReceive;
                     res += `🎉 <@${uid}> thắng **+${formatMoneyFull(totalReceive)}** (Số dư: ${formatMoneyFull(balances[uid])})\n`;
 
