@@ -17,7 +17,7 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBit
 const balances = {};
 const gameHistory = []; 
 const activeSessions = {};
-let totalGameCount = 739480; // Bắt đầu mã phiên từ đây hoặc tuỳ chỉnh theo ý ông
+let totalGameCount = 739480; 
 
 function getBalance(userId) { 
     if (!balances[userId]) balances[userId] = 1000000; 
@@ -49,7 +49,7 @@ function parseMoney(input, userId) {
     return isNaN(num) ? NaN : Math.floor(num * multiplier);
 }
 
-// Hàm format tiền sang dạng k, m, b ngắn gọn cho đẹp (VD: 4.5m, 500k)
+// Hàm format tiền sang dạng k, m, b ngắn gọn (VD: 4.5m, 500k)
 function formatMoneyShort(amount) {
     if (amount >= 1_000_000_000) return (amount / 1_000_000_000).toFixed(2).replace(/\.0$/, '') + 'b';
     if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(2).replace(/\.0$/, '') + 'm';
@@ -62,7 +62,7 @@ client.once('ready', () => {
         if (activeSessions[channelId].timer) clearInterval(activeSessions[channelId].timer);
     }
     Object.keys(activeSessions).forEach(key => delete activeSessions[key]);
-    console.log(`🤖 Bot KingMC Gambling đã sẵn sàng gửi DM kết quả cho ông!`);
+    console.log(`🤖 Bot KingMC Gambling đã sẵn sàng hoạt động ổn định!`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -231,7 +231,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
         const rollingEmbed = new EmbedBuilder()
             .setColor(0x3b82f6)
             .setTitle('🎲 ĐANG LẮC ĐỢI KẾT QUẢ...')
-            .setImage('https://i.imgur.com/83Z23q7.gif');
+            .setImage('https://media1.giphy.com/media/26tn33aiTi1jkl6H6/giphy.gif'); // Link GIF mới hoạt động ổn định
 
         const rollingMsg = await channel.send({ embeds: [rollingEmbed] });
         try { await gameMessage.delete(); } catch(e) {}
@@ -269,12 +269,11 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                 const userObj = await client.users.fetch(uid).catch(() => null);
 
                 if (isWin) {
-                    const profit = betInfo.amount; // Lãi bằng đúng số tiền cược
-                    const totalReceive = betInfo.amount * 2; // Nhận về gốc + lãi
+                    const profit = betInfo.amount; 
+                    const totalReceive = betInfo.amount * 2; 
                     balances[uid] += totalReceive;
                     res += `🎉 <@${uid}> thắng **+${totalReceive.toLocaleString()}$** (Số dư: ${balances[uid].toLocaleString()}$)\n`;
 
-                    // Gửi DM cho người chơi khi THẮNG theo đúng cú pháp yêu cầu
                     if (userObj) {
                         try {
                             const dmText = `Kết quả phiên #${currentSessionId}: ${d1} · ${d2} · ${d3} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thắng · lãi ${formatMoneyShort(profit)} Gambling · nhận về ${formatMoneyShort(totalReceive)} Gambling. Số dư: ${formatMoneyShort(balances[uid])} Gambling`;
@@ -285,7 +284,6 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                     const lossAmount = betInfo.amount;
                     res += `💀 <@${uid}> thua **-${lossAmount.toLocaleString()}$** (Số dư: ${balances[uid].toLocaleString()}$)\n`;
 
-                    // Gửi DM cho người chơi khi THUA
                     if (userObj) {
                         try {
                             const dmText = `Kết quả phiên #${currentSessionId}: ${d1} · ${d2} · ${d3} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thua · mất ${formatMoneyShort(lossAmount)} Gambling. Số dư: ${formatMoneyShort(balances[uid])} Gambling`;
