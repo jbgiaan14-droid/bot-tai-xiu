@@ -86,4 +86,4 @@ client.on('messageCreate', async (msg) => {
 
 client.once('ready', () => console.log(`🤖 Bot ${client.user.tag} đã sẵn sàng!`));
 
-client.login("DÁN_TOKEN_DISCORD_BẠN_VÀO_ĐÂY");
+client.login("process.env.BOT_TOKEN");
