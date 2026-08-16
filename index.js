@@ -21,6 +21,7 @@ const client = new Client({
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const ALLOWED_CHANNEL_ID = '1538197175731748894'; // Kênh #gambling🎲
+const PAY_BOT_NAME = 'giaanday2121'; // Tên bot nhận tiền pay trước
 
 const balances = {};
 const gameHistory = []; 
@@ -119,7 +120,6 @@ client.on('interactionCreate', async (i) => {
     const session = activeSessions[i.channelId];
 
     if (i.isButton()) {
-        // --- 1. MODAL NẠP GAMBLING ---
         if (i.customId === 'btn_open_nap') {
             const modal = new ModalBuilder().setCustomId('modal_nap').setTitle('NẠP GAMBLING');
             const ignInput = new TextInputBuilder()
@@ -138,7 +138,6 @@ client.on('interactionCreate', async (i) => {
             return await i.showModal(modal);
         }
 
-        // --- 2. MODAL RÚT GAMBLING ---
         if (i.customId === 'btn_open_rut') {
             const modal = new ModalBuilder().setCustomId('modal_rut').setTitle('RÚT GAMBLING');
             const ignInput = new TextInputBuilder()
@@ -157,7 +156,6 @@ client.on('interactionCreate', async (i) => {
             return await i.showModal(modal);
         }
 
-        // --- 3. MODAL CHUYỂN TIỀN GAMBLING ---
         if (i.customId === 'btn_open_chuyen') {
             const modal = new ModalBuilder().setCustomId('modal_chuyen').setTitle('CHUYỂN TIỀN GAMBLING');
             const targetInput = new TextInputBuilder()
@@ -216,12 +214,11 @@ client.on('interactionCreate', async (i) => {
         if (i.customId === 'modal_nap') {
             const ign = i.fields.getTextInputValue('nap_ign');
             const rawAmount = i.fields.getTextInputValue('nap_amount');
-            const codeNap = `KMC${Math.floor(1000 + Math.random() * 9000)}`;
             
             const embedDM = new EmbedBuilder()
                 .setColor(0x22c55e)
-                .setTitle('💳 YÊU CẦU NẠP GAMBLING')
-                .setDescription(`👤 **Người tạo:** <@${i.user.id}>\n🎮 **IGN:** \`${ign}\`\n🎁 **Số lượng:** **${rawAmount}**\n🔑 **Mã xác nhận nội bộ:** \`${codeNap}\`\n\n📌 **Hướng dẫn:**\nĐưa mã \`${codeNap}\` cho Bot KingMC Gambling hoặc Admin trong server để hoàn tất.\n\n*Hết hạn sau 5 phút.*`);
+                .setTitle('📥 Yêu cầu nạp Gambling')
+                .setDescription(`**${rawAmount.toUpperCase()} Gambling**\n\n👤 **IGN xác nhận:** \`${ign}\`\n💰 **Số tiền:** \`${rawAmount.toUpperCase()} Gambling\`\n⏰ **Hạn chót:** 5 phút tới\n\n📝 **Hướng dẫn:**\nChuyển đúng số Money bằng lệnh:\n\`/pay ${PAY_BOT_NAME} ${rawAmount.toLowerCase()}\`\n\n📌 **Lưu ý:**\n• Hệ thống tự cộng tiền tự động.\n• Vui lòng kiểm tra đúng tên bot trước khi chuyển!`);
             
             try {
                 await i.user.send({ embeds: [embedDM] });
