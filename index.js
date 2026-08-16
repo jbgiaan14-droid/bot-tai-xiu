@@ -245,13 +245,8 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
         totalGameCount++;
         const currentSessionId = totalGameCount;
 
-        const rollingEmbed = new EmbedBuilder()
-            .setColor(0x3b82f6)
-            .setTitle('🎲 ĐANG LẮC ĐỢI KẾT QUẢ...')
-            // Link GIPHY chuẩn trực tiếp, cam kết hiển thị ảnh GIF 100% trong Discord!
-            .setImage('https://media.giphy.com/media/l4hLA4ALhP0eD1ZGo/giphy.gif');
-
-        const rollingMsg = await channel.send({ embeds: [rollingEmbed] });
+        // Gửi thẳng link GIF trực tiếp ra khung chat để hiển thị ảnh động 100%
+        const rollingMsg = await channel.send('🎲 **ĐANG LẮC ĐỢI KẾT QUẢ...**\nhttps://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWk3MGs0bmFzazI3djR5aG0yZXBvZmxpZXR4YnlyNndmYmlwYXlpayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l4hLA4ALhP0eD1ZGo/giphy.gif');
         try { await gameMessage.delete(); } catch(e) {}
 
         setTimeout(async () => {
@@ -292,8 +287,10 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                 const userObj = await client.users.fetch(uid).catch(() => null);
 
                 if (isWin) {
-                    const profit = betInfo.amount; 
-                    const totalReceive = betInfo.amount * 2; 
+                    // Tỷ lệ chuẩn x1.9
+                    const totalReceive = Math.floor(betInfo.amount * 1.9); 
+                    const profit = totalReceive - betInfo.amount;          
+
                     balances[uid] += totalReceive;
                     res += `🎉 <@${uid}> thắng **+${formatMoneyFull(totalReceive)}** (Số dư: ${formatMoneyFull(balances[uid])})\n`;
 
@@ -326,11 +323,11 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                 .setDescription(res + `\n🔄 **Đang tự động mở phiên tiếp theo sau 5 giây...**`)
                 .setTimestamp();
 
-            await rollingMsg.edit({ embeds: [finalEmbed] });
+            await rollingMsg.edit({ content: null, embeds: [finalEmbed] });
 
             setTimeout(() => {
                 if (!activeSessions[channel.id]) {
-                    startTaiXiuSession(channel, rollingMsg);
+                    startTaiXiuSession(channel, null);
                 }
             }, 5000);
 
