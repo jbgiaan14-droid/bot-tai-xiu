@@ -245,11 +245,11 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
         totalGameCount++;
         const currentSessionId = totalGameCount;
 
+        // Dùng hiệu ứng xúc xắc trực quan bằng chữ động không bao giờ sợ bị lỗi tải ảnh
         const rollingEmbed = new EmbedBuilder()
             .setColor(0x3b82f6)
-            .setTitle('🎲 ĐANG LẮC ĐỢI KẾT QUẢ...')
-            // Link GIF này là link công khai vĩnh viễn, không bị lỗi như link của Discord CDN
-            .setImage('https://media.tenor.com/t3501v7t5pMAAAAi/rolling-dice.gif');
+            .setTitle('🎲 ĐANG LẮC XÚC XẮC...')
+            .setDescription('🎲 📳 **Đang lắc hột xí ngầu...**\n`⚀` `⚁` `⚂` $\\rightarrow$ `⚃` `⚄` `⚅`\n\n*Hệ thống đang tính toán kết quả...*');
 
         const rollingMsg = await channel.send({ embeds: [rollingEmbed] });
         try { await gameMessage.delete(); } catch(e) {}
@@ -284,7 +284,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
             gameHistory.push({ dice1: d1, dice2: d2, dice3: d3, total: total, side: total >= 11 ? 'tai' : 'xiu' });
 
             const resultText = total >= 11 ? 'TÀI' : 'XỈU';
-            let res = `🎲 Kết quả: **${d1} - ${d2} - ${d3}** (Tổng: **${total}** -> **${resultText}**)\n\n`;
+            let res = `🎲 Kết quả: **${d1Str} ${d2Str} ${d3Str}** (${d1} - ${d2} - ${d3} | Tổng: **${total}** -> **${resultText}**)\n\n`;
 
             for (const uid in userBets) {
                 const betInfo = userBets[uid];
