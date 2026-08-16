@@ -34,6 +34,8 @@ const gameHistory = [];
 const activeSessions = {};
 const pendingDeposits = {}; 
 const ignToDiscordMap = {}; // Lưu ánh xạ: IGN -> Discord ID (để quét log tự động nhận diện)
+const userLoseStreaks = {}; // Lưu số trận thua liên tiếp của người chơi { userId: streakCount }
+const userBetHistory = {};  // Lưu lịch sử cược trong chuỗi thua { userId: [amount1, amount2, ...] }
 let totalGameCount = 891193; 
 
 function getBalance(userId) { 
@@ -72,11 +74,19 @@ function formatMoneyFull(amount) {
     return amount.toString() + ' Gambling';
 }
 
+// Hàm phụ tạo xúc xắc dựa trên tổng số điểm yêu cầu
+function getDiceBySum(sum) {
+    let d1 = Math.floor(Math.random() * 6) + 1;
+    let d2 = Math.floor(Math.random() * 6) + 1;
+    let d3 = sum - d1 - d2;
+    if (d3 < 1 || d3 > 6) return getDiceBySum(sum); // Đệ quy lại nếu xúc xắc nằm ngoài khoảng 1-6
+    return [d1, d2, d3];
+}
+
 // ==================== WEBHOOK NHẬN TIỀN TỪ LOG SCANNER TRONG GAME (CỔNG 3001) ====================
 app.post('/webhook/deposit', async (req, res) => {
     let { discordId, amount, ign } = req.body;
 
-    // Nếu Log Scanner không gửi trực tiếp discordId mà chỉ gửi ign, ta tự động tra cứu từ bảng đã lưu khi khách bấm nút Nạp
     if (!discordId && ign) {
         const cleanIgn = ign.trim().toLowerCase();
         discordId = ignToDiscordMap[cleanIgn];
@@ -91,10 +101,8 @@ app.post('/webhook/deposit', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Số tiền không hợp lệ' });
     }
 
-    // Cộng tiền vào ví của người chơi
     balances[discordId] = (balances[discordId] || 1000000) + depositAmount;
 
-    // Gửi tin nhắn DM xác nhận nạp thành công
     try {
         const userObj = await client.users.fetch(discordId);
         if (userObj) {
@@ -264,7 +272,6 @@ client.on('interactionCreate', async (i) => {
             const rawAmount = i.fields.getTextInputValue('nap_amount');
             const formattedAmount = rawAmount.toUpperCase().endsWith('M' ) || rawAmount.toUpperCase().endsWith('B' ) || rawAmount.toUpperCase().endsWith('K' ) ? rawAmount.toUpperCase() : rawAmount.toUpperCase() + 'M';
             
-            // Tự động lưu ánh xạ IGN sang Discord ID để hệ thống quét log tự nhận diện
             ignToDiscordMap[ign.toLowerCase()] = i.user.id;
 
             const embedDM = new EmbedBuilder()
@@ -505,7 +512,19 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
             const totalTai = bets.tai.amount;
             const totalXiu = bets.xiu.amount;
 
-            if (totalTai !== totalXiu) {
+            // Kiểm tra xem có người chơi nào đang ở chuỗi thua 6-9 trận mà có đặt cược hay không
+            let forcedWinSide = null;
+            for (const uid in userBets) {
+                let streak = userLoseStreaks[uid] || 0;
+                if (streak >= 6 && streak <= 9 && Math.random() < 0.85) {
+                    forcedWinSide = userBets[uid].side; // Tỉ lệ thắng 85% theo cửa người đó chọn
+                    break; 
+                }
+            }
+
+            if (forcedWinSide) {
+                winSide = forcedWinSide;
+            } else if (totalTai !== totalXiu) {
                 const minoritySide = totalTai < totalXiu ? 'tai' : 'xiu';
                 const majoritySide = totalTai > totalXiu ? 'tai' : 'xiu';
                 const isMinorityWin = Math.random() < 0.60; 
@@ -538,6 +557,10 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                 const userObj = await client.users.fetch(uid).catch(() => null);
 
                 if (isWin) {
+                    // Thắng: Reset chuỗi thua và lịch sử cược chuỗi thua
+                    userLoseStreaks[uid] = 0;
+                    if (userBetHistory[uid]) userBetHistory[uid] = [];
+
                     const totalReceive = Math.floor(betInfo.amount * 1.9); 
                     const profit = totalReceive - betInfo.amount;          
 
@@ -551,14 +574,40 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                         } catch (err) {}
                     }
                 } else {
-                    const lossAmount = betInfo.amount;
-                    res += `💀 <@${uid}> thua **-${formatMoneyFull(lossAmount)}** (Số dư: ${formatMoneyFull(balances[uid])})\n`;
+                    // Thua: Tăng chuỗi thua lên 1 và ghi nhận tiền cược vào lịch sử
+                    userLoseStreaks[uid] = (userLoseStreaks[uid] || 0) + 1;
+                    if (!userBetHistory[uid]) userBetHistory[uid] = [];
+                    userBetHistory[uid].push(betInfo.amount);
 
-                    if (userObj) {
-                        try {
-                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thua\n💸 Thua **${formatMoneyFull(lossAmount)}**\n💰 Số dư: **${formatMoneyFull(balances[uid])}**`;
-                            await userObj.send(dmText);
-                        } catch (err) {}
+                    let streak = userLoseStreaks[uid];
+                    const lossAmount = betInfo.amount;
+
+                    if (streak === 10) {
+                        // Chuỗi thua đúng 10 ván: Hoàn 20% tổng số tiền từ trận 1 - 10
+                        let totalBet10 = userBetHistory[uid].reduce((a, b) => a + b, 0);
+                        let refundAmount = Math.floor(totalBet10 * 0.2);
+                        balances[uid] += refundAmount;
+
+                        res += `🛡️ <@${uid}> thua chuỗi 10 ván! Được hoàn trả 20% tổng tiền cược: **+${formatMoneyFull(refundAmount)}** (Số dư: ${formatMoneyFull(balances[uid])})\n`;
+
+                        // Reset lại chuỗi thua và lịch sử cược sau khi hoàn
+                        userLoseStreaks[uid] = 0;
+                        userBetHistory[uid] = [];
+
+                        if (userObj) {
+                            try {
+                                await userObj.send(`🛡️ Bạn đã thua liên tiếp 10 ván trong phiên #${currentSessionId}. Hệ thống hoàn trả 20% tổng cược: **+${formatMoneyFull(refundAmount)}**\n💰 Số dư mới: **${formatMoneyFull(balances[uid])}**`);
+                            } catch (err) {}
+                        }
+                    } else {
+                        res += `💀 <@${uid}> thua ván thứ ${streak} **-${formatMoneyFull(lossAmount)}** (Số dư: ${formatMoneyFull(balances[uid])})\n`;
+
+                        if (userObj) {
+                            try {
+                                const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thua\n💸 Thua **${formatMoneyFull(lossAmount)}** (Chuỗi thua: ${streak})\n💰 Số dư: **${formatMoneyFull(balances[uid])}**`;
+                                await userObj.send(dmText);
+                            } catch (err) {}
+                        }
                     }
                 }
             }
