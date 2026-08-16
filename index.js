@@ -8,10 +8,10 @@ http.createServer((req, res) => {
 // ==========================================
 // CẤU HÌNH CƠ BẢN
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const ALLOWED_CHANNEL_ID = '1538197175731748894'; // Kênh #gambling🎲 của ông
+const ALLOWED_CHANNEL_ID = '1538197175731748894'; // ID kênh #gambling🎲 của ông
 // ==========================================
 
-const { Client, GatewayIntentBits, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
 
@@ -69,12 +69,9 @@ client.on('messageCreate', async (message) => {
     const content = message.content.toLowerCase();
 
     if (content === '!tx' || content === '!taixiu') {
+        // Chỉ giới hạn đúng kênh chỉ định để tránh member quậy các kênh khác
         if (message.channel.id !== ALLOWED_CHANNEL_ID) {
             return message.reply({ content: `❌ Lệnh này chỉ được dùng tại kênh <#${ALLOWED_CHANNEL_ID}> thôi nhé!`, ephemeral: true });
-        }
-
-        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return message.reply({ content: '❌ Chỉ có Quản trị viên (Admin) mới có quyền khởi tạo phiên Tài Xỉu!', ephemeral: true });
         }
 
         if (activeSessions[message.channel.id]) {
@@ -282,7 +279,6 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                 const userObj = await client.users.fetch(uid).catch(() => null);
 
                 if (isWin) {
-                    // Tỷ lệ thắng x1.9 (Lãi = cược * 0.9, Tổng nhận về = cược * 1.9)
                     const profit = Math.floor(betInfo.amount * 0.9); 
                     const totalReceive = Math.floor(betInfo.amount * 1.9); 
                     balances[uid] += totalReceive;
@@ -290,7 +286,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
 
                     if (userObj) {
                         try {
-                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thắng\n💵 Lãi **${formatMoneyFull(profit)} Gambling** · Nhận về **${formatMoneyFull(totalReceive)} Gambling**\n📉 Chuỗi thắng: 1 phiên\n💰 Số dư: **${formatMoneyFull(balances[uid])} Gambling**`;
+                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thắng\n💵 Lãi **${formatMoneyFull(profit)}** · Nhận về **${formatMoneyFull(totalReceive)}**\n📉 Chuỗi thắng: 1 phiên\n💰 Số dư: **${formatMoneyFull(balances[uid])}**`;
                             await userObj.send(dmText);
                         } catch (err) {}
                     }
@@ -300,7 +296,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
 
                     if (userObj) {
                         try {
-                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thua\n💸 Thua **${formatMoneyFull(lossAmount)} Gambling**\n📉 Chuỗi thua hiện tại: 1/10 phiên\n💰 Số dư: **${formatMoneyFull(balances[uid])} Gambling**`;
+                            const dmText = `🎲 Kết quả phiên #${currentSessionId}: ${d1Str} · ${d2Str} · ${d3Str} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thua\n💸 Thua **${formatMoneyFull(lossAmount)}**\n📉 Chuỗi thua hiện tại: 1/10 phiên\n💰 Số dư: **${formatMoneyFull(balances[uid])}**`;
                             await userObj.send(dmText);
                         } catch (err) {}
                     }
