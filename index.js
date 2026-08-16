@@ -12,11 +12,12 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 
 const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
 
 const balances = {};
 const gameHistory = []; 
 const activeSessions = {};
+let totalGameCount = 739480; // Bắt đầu mã phiên từ đây hoặc tuỳ chỉnh theo ý ông
 
 function getBalance(userId) { 
     if (!balances[userId]) balances[userId] = 1000000; 
@@ -48,12 +49,20 @@ function parseMoney(input, userId) {
     return isNaN(num) ? NaN : Math.floor(num * multiplier);
 }
 
+// Hàm format tiền sang dạng k, m, b ngắn gọn cho đẹp (VD: 4.5m, 500k)
+function formatMoneyShort(amount) {
+    if (amount >= 1_000_000_000) return (amount / 1_000_000_000).toFixed(2).replace(/\.0$/, '') + 'b';
+    if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(2).replace(/\.0$/, '') + 'm';
+    if (amount >= 1_000) return (amount / 1_000).toFixed(2).replace(/\.0$/, '') + 'k';
+    return amount.toString();
+}
+
 client.once('ready', () => {
     for (const channelId in activeSessions) {
         if (activeSessions[channelId].timer) clearInterval(activeSessions[channelId].timer);
     }
     Object.keys(activeSessions).forEach(key => delete activeSessions[key]);
-    console.log(`🤖 Bot KingMC Gambling đã sẵn sàng với tính năng nhập tiền tự do!`);
+    console.log(`🤖 Bot KingMC Gambling đã sẵn sàng gửi DM kết quả cho ông!`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -69,11 +78,10 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-// SỰ KIỆN TƯƠNG TÁC ĐƯỢC ĐẶT Ở NGOÀI ĐỂ KHÔNG BỊ TRÀN BỘ NHỚ VÀ LAG
+// SỰ KIỆN TƯƠNG TÁC
 client.on('interactionCreate', async (i) => {
     const session = activeSessions[i.channelId];
 
-    // 1. Khi bấm nút Tài hoặc Xỉu -> Hiện Modal để người chơi gõ số tiền tùy ý
     if (i.isButton() && (i.customId === 'bet_tai' || i.customId === 'bet_xiu')) {
         if (!session) return i.reply({ content: '❌ Phiên đã kết thúc!', ephemeral: true });
         if (session.timeLeft <= 5) return i.reply({ content: '❌ Đã khóa cược!', ephemeral: true });
@@ -86,26 +94,24 @@ client.on('interactionCreate', async (i) => {
 
         const amountInput = new TextInputBuilder()
             .setCustomId('amount_input')
-            .setLabel('Nhập số tiền bạn muốn cược:')
+            .setLabel('Nhập số tiền muốn cược:')
             .setStyle(TextInputStyle.Short)
-            .setPlaceholder('VD: 1m, 2m, 3m, 10b hoặc 500k')
+            .setPlaceholder('VD: 1m, 2m, 10b, 500k')
             .setRequired(true);
 
         modal.addComponents(new ActionRowBuilder().addComponents(amountInput));
         return await i.showModal(modal);
     }
 
-    // 2. Khi người chơi bấm Gửi từ Modal nhập tiền
     if (i.isModalSubmit() && i.customId.startsWith('modal_bet_')) {
         if (!session) return i.reply({ content: '❌ Phiên đã kết thúc!', ephemeral: true });
 
         const side = i.customId.replace('modal_bet_', '');
         const rawAmount = i.fields.getTextInputValue('amount_input').trim();
-        
         let amount = parseMoney(rawAmount, i.user.id);
 
         if (isNaN(amount) || amount < 5000) {
-            return i.reply({ content: '❌ Vui lòng nhập số tiền hợp lệ (tối thiểu 5,000$, hỗ trợ: k, m, b)!', ephemeral: true });
+            return i.reply({ content: '❌ Vui lòng nhập số tiền hợp lệ (tối thiểu 5,000$)!', ephemeral: true });
         }
         if (getBalance(i.user.id) < amount) {
             return i.reply({ content: `❌ Bạn không đủ tiền! Số dư hiện tại: ${getBalance(i.user.id).toLocaleString()}$`, ephemeral: true });
@@ -127,22 +133,19 @@ client.on('interactionCreate', async (i) => {
         return;
     }
 
-    // 3. Xử lý các nút phụ (Số dư, Lịch sử, BXH)
     if (i.isButton()) {
         if (i.customId === 'btn_sodu') {
             const bal = getBalance(i.user.id);
-            return i.reply({ content: `💰 Số dư hiện tại trong ví của bạn: **${bal.toLocaleString()}$**`, ephemeral: true });
+            return i.reply({ content: `💰 Số dư hiện tại trong ví: **${bal.toLocaleString()}$**`, ephemeral: true });
         }
-
         if (i.customId === 'btn_lichsu') {
-            if (gameHistory.length === 0) return i.reply({ content: '📜 Chưa có lịch sử ván đấu nào gần đây!', ephemeral: true });
+            if (gameHistory.length === 0) return i.reply({ content: '📜 Chưa có lịch sử ván đấu!', ephemeral: true });
             let historyStr = gameHistory.slice(-10).reverse().map((res, idx) => {
                 return `Ván ${gameHistory.length - idx}: **${res.dice1}-${res.dice2}-${res.dice3}** (Tổng: **${res.total}** -> **${res.side === 'tai' ? '🔴 TÀI' : '🔵 XỈU'}**)`;
             }).join('\n');
-            const historyEmbed = new EmbedBuilder().setColor(0x38bdf8).setTitle('📜 10 Ván Kết Quả Gần Nhất').setDescription(historyStr);
+            const historyEmbed = new EmbedBuilder().setColor(0x38bdf8).setTitle('📜 10 Ván Gần Nhất').setDescription(historyStr);
             return i.reply({ embeds: [historyEmbed], ephemeral: true });
         }
-
         if (i.customId === 'btn_bxh') {
             const sortedUsers = Object.entries(balances).sort((a, b) => b[1] - a[1]).slice(0, 10);
             let desc = sortedUsers.length === 0 ? 'Chưa có dữ liệu!' : '';
@@ -150,7 +153,7 @@ client.on('interactionCreate', async (i) => {
                 let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `**#${index + 1}**`;
                 desc += `${medal} <@${uid}> - **${money.toLocaleString()}$**\n`;
             });
-            const bxhEmbed = new EmbedBuilder().setColor(0xfacc15).setTitle('🏆 Bảng Xếp Hạng Đại Gia').setDescription(desc);
+            const bxhEmbed = new EmbedBuilder().setColor(0xfacc15).setTitle('🏆 BXH Đại Gia').setDescription(desc);
             return i.reply({ embeds: [bxhEmbed], ephemeral: true });
         }
     }
@@ -222,6 +225,9 @@ async function startTaiXiuSession(channel, previousMsg = null) {
 
 async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
     try {
+        totalGameCount++;
+        const currentSessionId = totalGameCount;
+
         const rollingEmbed = new EmbedBuilder()
             .setColor(0x3b82f6)
             .setTitle('🎲 ĐANG LẮC ĐỢI KẾT QUẢ...')
@@ -238,8 +244,6 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
             if (totalTai !== totalXiu) {
                 const minoritySide = totalTai < totalXiu ? 'tai' : 'xiu';
                 const majoritySide = totalTai > totalXiu ? 'tai' : 'xiu';
-
-                // 60% bên đặt ít hơn thắng, 40% bên đặt nhiều hơn thắng (để đánh lừa)
                 const isMinorityWin = Math.random() < 0.60; 
                 winSide = isMinorityWin ? minoritySide : majoritySide;
             } else {
@@ -260,12 +264,34 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
             let res = `🎲 Kết quả: **${d1} - ${d2} - ${d3}** (Tổng: **${total}** -> **${resultText}**)\n\n`;
 
             for (const uid in userBets) {
-                if (userBets[uid].side === winSide) {
-                    const prize = userBets[uid].amount * 2;
-                    balances[uid] += prize;
-                    res += `🎉 <@${uid}> thắng **+${prize.toLocaleString()}$** (Số dư: ${balances[uid].toLocaleString()}$)\n`;
+                const betInfo = userBets[uid];
+                const isWin = betInfo.side === winSide;
+                const userObj = await client.users.fetch(uid).catch(() => null);
+
+                if (isWin) {
+                    const profit = betInfo.amount; // Lãi bằng đúng số tiền cược
+                    const totalReceive = betInfo.amount * 2; // Nhận về gốc + lãi
+                    balances[uid] += totalReceive;
+                    res += `🎉 <@${uid}> thắng **+${totalReceive.toLocaleString()}$** (Số dư: ${balances[uid].toLocaleString()}$)\n`;
+
+                    // Gửi DM cho người chơi khi THẮNG theo đúng cú pháp yêu cầu
+                    if (userObj) {
+                        try {
+                            const dmText = `Kết quả phiên #${currentSessionId}: ${d1} · ${d2} · ${d3} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thắng · lãi ${formatMoneyShort(profit)} Gambling · nhận về ${formatMoneyShort(totalReceive)} Gambling. Số dư: ${formatMoneyShort(balances[uid])} Gambling`;
+                            await userObj.send(dmText);
+                        } catch (err) {}
+                    }
                 } else {
-                    res += `💀 <@${uid}> thua **-${userBets[uid].amount.toLocaleString()}$** (Số dư: ${balances[uid].toLocaleString()}$)\n`;
+                    const lossAmount = betInfo.amount;
+                    res += `💀 <@${uid}> thua **-${lossAmount.toLocaleString()}$** (Số dư: ${balances[uid].toLocaleString()}$)\n`;
+
+                    // Gửi DM cho người chơi khi THUA
+                    if (userObj) {
+                        try {
+                            const dmText = `Kết quả phiên #${currentSessionId}: ${d1} · ${d2} · ${d3} = ${total} — ${betInfo.side === 'tai' ? 'Tài' : 'Xỉu'} Thua · mất ${formatMoneyShort(lossAmount)} Gambling. Số dư: ${formatMoneyShort(balances[uid])} Gambling`;
+                            await userObj.send(dmText);
+                        } catch (err) {}
+                    }
                 }
             }
 
@@ -275,7 +301,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
 
             const finalEmbed = new EmbedBuilder()
                 .setColor(total >= 11 ? 0xef4444 : 0x3b82f6)
-                .setTitle('🏆 KẾT QUẢ PHIÊN TÀI XỈU')
+                .setTitle(`🏆 KẾT QUẢ PHIÊN #${currentSessionId}`)
                 .setDescription(res + `\n🔄 **Đang tự động mở phiên tiếp theo sau 5 giây...**`)
                 .setTimestamp();
 
