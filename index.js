@@ -505,18 +505,36 @@ setInterval(() => {
 }, 60000);
 
 // ============================================================
-//  SỰ KIỆN THÀNH VIÊN MỚI VÀO SERVER
+//  SỰ KIỆN THÀNH VIÊN MỚI VÀO SERVER (CÓ DEBUG)
 // ============================================================
 client.on('guildMemberAdd', async (member) => {
+    console.log(`🔔 ${member.user.username} (${member.user.id}) vừa vào server!`);
+    
     try {
+        // Kiểm tra role trong server
         const role = member.guild.roles.cache.get(UNREGISTERED_ROLE_ID);
-        if (role) {
-            await member.roles.add(role);
-            console.log(`✅ Đã gán role "Chưa đăng ký" cho ${member.user.username}`);
-        } else {
-            console.log(`⚠️ Không tìm thấy role "Chưa đăng ký" (ID: ${UNREGISTERED_ROLE_ID})`);
+        console.log(`📌 Role "Chưa đăng ký" tìm thấy: ${role ? role.name : 'KHÔNG TÌM THẤY!'}`);
+        
+        if (!role) {
+            console.log(`❌ KHÔNG TÌM THẤY ROLE VỚI ID: ${UNREGISTERED_ROLE_ID}`);
+            console.log(`📌 Danh sách role trong server:`, member.guild.roles.cache.map(r => `${r.name} (${r.id})`).join(', '));
+            return;
         }
 
+        // Kiểm tra bot có quyền Manage Roles không
+        const botMember = await member.guild.members.fetch(client.user.id);
+        const hasPerm = botMember.permissions.has(PermissionsBitField.Flags.ManageRoles);
+        console.log(`🔑 Bot có quyền Manage Roles: ${hasPerm}`);
+        
+        if (!hasPerm) {
+            console.log(`❌ BOT KHÔNG CÓ QUYỀN MANAGE ROLES!`);
+        }
+
+        // Gán role
+        await member.roles.add(role);
+        console.log(`✅ Đã gán role "${role.name}" cho ${member.user.username}`);
+
+        // ===== GỬI TIN NHẮN CHÀO MỪNG =====
         const embed = new EmbedBuilder()
             .setColor(0xfacc15)
             .setTitle('👋 CHÀO MỪNG ĐẾN VỚI KINGMC!')
@@ -528,6 +546,7 @@ client.on('guildMemberAdd', async (member) => {
             const channel = await member.guild.channels.fetch(VERIFIED_CHANNEL_ID);
             if (channel) {
                 await channel.send({ content: `<@${member.user.id}>`, embeds: [embed] });
+                console.log(`✅ Đã gửi tin nhắn chào mừng vào kênh Verified`);
             }
         } catch (err) {
             console.log('⚠️ Không thể gửi tin nhắn vào kênh Verified:', err.message);
@@ -535,12 +554,14 @@ client.on('guildMemberAdd', async (member) => {
 
         try {
             await member.user.send(`👋 Chào mừng bạn đến với **KINGMC GAMBLING**!\n\n📌 Để bắt đầu, hãy đăng ký IGN bằng lệnh:\n\`!register <IGN>\`\n\n📝 Ví dụ: \`!register KingMC_Pro\`\n\n🔗 Sau khi đăng ký, bạn sẽ có thể truy cập tất cả kênh của server!`);
+            console.log(`✅ Đã gửi DM chào mừng cho ${member.user.username}`);
         } catch (err) {
             console.log(`⚠️ Không thể gửi DM cho ${member.user.username}`);
         }
 
     } catch (err) {
-        console.log('❌ Lỗi xử lý thành viên mới:', err.message);
+        console.log(`❌ LỖI GÁN ROLE:`, err.message);
+        console.log(`📌 Stack trace:`, err.stack);
     }
 });
 
@@ -551,6 +572,7 @@ client.once('ready', () => {
     console.log(`🤖 Bot ${client.user.tag} đã sẵn sàng!`);
     console.log(`📊 ${Object.keys(balances).length} người chơi`);
     console.log(`📝 ${Object.keys(ignToDiscordMap).length} IGN đã đăng ký`);
+    console.log(`🔑 Bot đang ở ${client.guilds.cache.size} server`);
 });
 
 client.on('messageCreate', async (message) => {
