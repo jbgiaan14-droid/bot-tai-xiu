@@ -388,7 +388,7 @@ const LINH_VAT_EMOJI = {
 
 // ===== ID KHÔNG GIỚI HẠN CƯỢC =====
 const UNLIMITED_IDS = ['1291949040719630357', '1130441780479922176'];
-const MAX_BET = 50000000; // 50 triệu
+const MAX_BET = 50000000;
 
 // Load
 const saved = loadData();
@@ -1011,15 +1011,14 @@ async function startTaiXiuSession(channel, previousMsg = null) {
 }
 
 // ============================================================
-//  FINISH TÀI XỈU - ĐÃ SỬA GIF
+//  FINISH TÀI XỈU - DÙNG GIF BẠN GỬI
 // ============================================================
 async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
     try {
         totalGameCount++;
         const currentSessionId = totalGameCount;
 
-        // ===== GIF LẮC XÚC XẮC MỚI (DÙNG TEXT ANIMATION) =====
-        const rollingMsg = await channel.send('🎲 **ĐANG LẮC XÚC XẮC...**\n⚀ ⚁ ⚂ ⚃ ⚄ ⚅');
+        const rollingMsg = await channel.send('🎲 **ĐANG LẮC XÚC XẮC...**\nhttps://cdn.discordapp.com/attachments/1534127809977516104/1538428234738438144/dice-rolling.gif?ex=6a83f5f1&is=6a82a471&hm=4fdd2f45c360dbe34ebff0c0baf691d7cb1ef1636b9b7d8210c89ce5dc50a597&');
         try { await gameMessage.delete(); } catch(e) {}
 
         setTimeout(async () => {
@@ -1269,14 +1268,13 @@ async function startBauCuaSession(channel, previousMsg = null) {
 }
 
 // ============================================================
-//  FINISH BẦU CUA - ĐÃ SỬA GIF + TRẢ THƯỞNG x2, x3, x4
+//  FINISH BẦU CUA - DÙNG TEXT (KHÔNG GIF)
 // ============================================================
 async function finishBauCuaGame(channel, gameMessage, bets, userBets, totalBets) {
     try {
         totalGameCount++;
         const currentSessionId = totalGameCount;
 
-        // ===== GIF LẮC BẦU CUA (DÙNG TEXT ANIMATION) =====
         const rollingMsg = await channel.send('🎲 **ĐANG LẮC BẦU CUA...**\n🔄 Đang xáo...');
         try { await gameMessage.delete(); } catch(e) {}
 
@@ -1293,8 +1291,6 @@ async function finishBauCuaGame(channel, gameMessage, bets, userBets, totalBets)
                 const userObj = await client.users.fetch(uid).catch(() => null);
 
                 if (dem > 0) {
-                    // ===== TRẢ THƯỞNG ĐÚNG LUẬT BẦU CUA =====
-                    // Ra 1 con → x2, Ra 2 con → x3, Ra 3 con → x4
                     const multiplier = dem + 1;
                     const totalReceive = amount * multiplier;
                     const profit = totalReceive - amount;
