@@ -63,11 +63,7 @@
             from { opacity: 0; transform: translateY(30px) scale(0.95); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .login-box .logo {
-            font-size: 48px;
-            margin-bottom: 10px;
-            display: block;
-        }
+        .login-box .logo { font-size: 48px; margin-bottom: 10px; display: block; }
         .login-box h1 {
             font-size: 24px;
             font-weight: 900;
@@ -76,17 +72,8 @@
             -webkit-text-fill-color: transparent;
             margin-bottom: 8px;
         }
-        .login-box .sub {
-            color: #553344;
-            font-size: 13px;
-            letter-spacing: 3px;
-            margin-bottom: 30px;
-        }
-        .login-box .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
+        .login-box .sub { color: #553344; font-size: 13px; letter-spacing: 3px; margin-bottom: 30px; }
+        .login-box .input-group { display: flex; flex-direction: column; gap: 15px; }
         .login-box .input-pink {
             padding: 14px 18px;
             background: rgba(20, 0, 15, 0.6);
@@ -134,12 +121,7 @@
             transition: opacity 0.3s ease;
         }
         .login-error.show { opacity: 1; }
-        .login-box .footer-text {
-            color: #553344;
-            font-size: 11px;
-            margin-top: 20px;
-            letter-spacing: 1px;
-        }
+        .login-box .footer-text { color: #553344; font-size: 11px; margin-top: 20px; letter-spacing: 1px; }
         .login-box .footer-text span { color: #ff1493; }
 
         /* ===== HEADER ===== */
@@ -193,12 +175,7 @@
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.5; transform: scale(0.8); }
         }
-        .status-text {
-            color: #ff6eb4;
-            font-size: 14px;
-            font-weight: 400;
-            letter-spacing: 2px;
-        }
+        .status-text { color: #ff6eb4; font-size: 14px; font-weight: 400; letter-spacing: 2px; }
         .logout-btn {
             padding: 6px 18px;
             border: 1px solid rgba(255, 20, 147, 0.2);
@@ -210,11 +187,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        .logout-btn:hover {
-            border-color: #ff1493;
-            color: #ff1493;
-            box-shadow: 0 0 20px rgba(255, 20, 147, 0.1);
-        }
+        .logout-btn:hover { border-color: #ff1493; color: #ff1493; box-shadow: 0 0 20px rgba(255, 20, 147, 0.1); }
 
         /* ===== STATS ===== */
         .stats-grid {
@@ -297,10 +270,7 @@
             letter-spacing: 1px;
             position: relative;
         }
-        .tab-btn:hover {
-            color: #ff6eb4;
-            background: rgba(255, 20, 147, 0.08);
-        }
+        .tab-btn:hover { color: #ff6eb4; background: rgba(255, 20, 147, 0.08); }
         .tab-btn.active {
             color: #fff;
             background: linear-gradient(135deg, rgba(255, 20, 147, 0.25), rgba(255, 20, 147, 0.05));
@@ -321,10 +291,7 @@
         }
 
         /* ===== PANELS ===== */
-        .panel {
-            display: none;
-            animation: fadeSlide 0.5s ease;
-        }
+        .panel { display: none; animation: fadeSlide 0.5s ease; }
         .panel.active { display: block; }
         @keyframes fadeSlide {
             from { opacity: 0; transform: translateY(15px); }
@@ -354,11 +321,7 @@
 
         /* ===== TABLE ===== */
         .table-wrap { overflow-x: auto; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
         thead th {
             text-align: left;
             padding: 12px 14px;
@@ -374,17 +337,12 @@
             border-bottom: 1px solid rgba(255, 20, 147, 0.05);
             transition: all 0.3s ease;
         }
-        tbody tr {
-            transition: all 0.3s ease;
-            cursor: default;
-        }
+        tbody tr { transition: all 0.3s ease; cursor: default; }
         tbody tr:hover {
             background: rgba(255, 20, 147, 0.05);
             box-shadow: inset 0 0 30px rgba(255, 20, 147, 0.02);
         }
-        tbody tr:hover td {
-            color: #fff;
-        }
+        tbody tr:hover td { color: #fff; }
 
         .badge-tai {
             background: rgba(255, 20, 147, 0.2);
@@ -485,7 +443,6 @@
             margin-bottom: 5px;
         }
 
-        /* ===== AUTO STATUS ===== */
         .auto-status {
             margin-top: 12px;
             padding: 12px 18px;
@@ -500,7 +457,6 @@
         .auto-status span { color: #885577; }
         .auto-status .val { color: #ff6eb4; }
 
-        /* ===== SEARCH BAR ===== */
         .search-bar {
             display: flex;
             gap: 10px;
@@ -509,7 +465,6 @@
         }
         .search-bar .input-pink { flex: 2; min-width: 180px; }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             .header h1 { font-size: 20px; }
             .stat-card .value { font-size: 20px; }
@@ -524,9 +479,7 @@
 </head>
 <body>
 
-<!-- ============================================================ -->
-<!--  LOGIN SCREEN -->
-<!-- ============================================================ -->
+<!-- ===== LOGIN SCREEN ===== -->
 <div class="login-overlay" id="loginOverlay">
     <div class="login-box">
         <span class="logo">🌸</span>
@@ -541,9 +494,7 @@
     </div>
 </div>
 
-<!-- ============================================================ -->
-<!--  MAIN PANEL -->
-<!-- ============================================================ -->
+<!-- ===== MAIN PANEL ===== -->
 <div class="container" id="mainPanel" style="display:none;">
     <!-- HEADER -->
     <header class="header">
@@ -586,10 +537,11 @@
         <button class="tab-btn" onclick="switchTab('history')">📜 LỊCH SỬ</button>
         <button class="tab-btn" onclick="switchTab('transfer')">💸 CHUYỂN TIỀN</button>
         <button class="tab-btn" onclick="switchTab('auto')">🤖 AUTO</button>
+        <button class="tab-btn" onclick="switchTab('withdraw')">💵 RÚT TIỀN</button>
         <button class="tab-btn" onclick="switchTab('settings')">⚙️ CÀI ĐẶT</button>
     </div>
 
-    <!-- ===== TAB: PLAYERS ===== -->
+    <!-- TAB: PLAYERS -->
     <div id="tab-players" class="panel active">
         <div class="card">
             <div class="card-title">👤 DANH SÁCH NGƯỜI CHƠI</div>
@@ -615,7 +567,7 @@
         </div>
     </div>
 
-    <!-- ===== TAB: HISTORY ===== -->
+    <!-- TAB: HISTORY -->
     <div id="tab-history" class="panel">
         <div class="card">
             <div class="card-title">📜 LỊCH SỬ PHIÊN</div>
@@ -636,7 +588,7 @@
         </div>
     </div>
 
-    <!-- ===== TAB: TRANSFER ===== -->
+    <!-- TAB: TRANSFER -->
     <div id="tab-transfer" class="panel">
         <div class="card">
             <div class="card-title">💸 CHUYỂN TIỀN</div>
@@ -663,7 +615,7 @@
         </div>
     </div>
 
-    <!-- ===== TAB: AUTO ===== -->
+    <!-- TAB: AUTO -->
     <div id="tab-auto" class="panel">
         <div class="card">
             <div class="card-title">🤖 AUTO TRANSFER</div>
@@ -696,7 +648,52 @@
         </div>
     </div>
 
-    <!-- ===== TAB: SETTINGS ===== -->
+    <!-- TAB: WITHDRAW -->
+    <div id="tab-withdraw" class="panel">
+        <div class="card">
+            <div class="card-title">💵 RÚT TIỀN (Yêu cầu Admin duyệt)</div>
+            <div class="input-group">
+                <input type="text" id="withdrawUserId" class="input-pink" placeholder="Discord ID của bạn">
+                <input type="text" id="withdrawAmount" class="input-pink" placeholder="Số tiền (VD: 10m)">
+                <input type="text" id="withdrawIgn" class="input-pink" placeholder="IGN nhận tiền trong game">
+                <button class="btn-pink-solid" onclick="doWithdraw()">💵 GỬI YÊU CẦU</button>
+            </div>
+            
+            <div class="card-title" style="font-size:14px; margin-top:20px;">⏳ DANH SÁCH CHỜ DUYỆT</div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Người chơi</th>
+                            <th>IGN</th>
+                            <th style="text-align:right;">Số tiền</th>
+                            <th style="text-align:center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="withdrawTableBody"></tbody>
+                </table>
+            </div>
+            
+            <div class="card-title" style="font-size:14px; margin-top:20px;">📜 LỊCH SỬ RÚT TIỀN</div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Người chơi</th>
+                            <th>IGN</th>
+                            <th style="text-align:right;">Số tiền</th>
+                            <th style="text-align:center;">Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody id="withdrawHistoryBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: SETTINGS -->
     <div id="tab-settings" class="panel">
         <div class="card">
             <div class="card-title">⚙️ CÀI ĐẶT HỆ THỐNG</div>
@@ -723,350 +720,470 @@
 </div>
 
 <script>
-    // ============================================================
-    //  AUTHENTICATION
-    // ============================================================
-    const SESSION_PASSWORD = 'Z0N6Hz9UzGX';
-    let isLoggedIn = false;
+// ============================================================
+//  AUTHENTICATION
+// ============================================================
+const SESSION_PASSWORD = 'Z0N6Hz9UzGX';
+let isLoggedIn = false;
 
-    async function doLogin() {
-        const password = document.getElementById('loginPassword').value;
-        const errorEl = document.getElementById('loginError');
-        
-        if (!password) {
-            errorEl.textContent = '🌸 Vui lòng nhập mật khẩu!';
-            errorEl.classList.add('show');
-            return;
-        }
-        
-        try {
-            const res = await fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password })
-            });
-            const data = await res.json();
-            
-            if (data.success) {
-                isLoggedIn = true;
-                document.getElementById('loginOverlay').classList.add('hidden');
-                document.getElementById('mainPanel').style.display = 'block';
-                init();
-            } else {
-                errorEl.textContent = '❌ Sai mật khẩu! Vui lòng thử lại.';
-                errorEl.classList.add('show');
-                document.getElementById('loginPassword').value = '';
-                document.getElementById('loginPassword').focus();
-            }
-        } catch (e) {
-            errorEl.textContent = '❌ Lỗi kết nối! Vui lòng thử lại.';
-            errorEl.classList.add('show');
-        }
+async function doLogin() {
+    const password = document.getElementById('loginPassword').value;
+    const errorEl = document.getElementById('loginError');
+    if (!password) {
+        errorEl.textContent = '🌸 Vui lòng nhập mật khẩu!';
+        errorEl.classList.add('show');
+        return;
     }
-
-    async function doLogout() {
-        if (!confirm('🌸 Bạn có chắc muốn đăng xuất?')) return;
-        try {
-            await fetch('/api/logout', { method: 'POST' });
-            isLoggedIn = false;
-            document.getElementById('loginOverlay').classList.remove('hidden');
-            document.getElementById('mainPanel').style.display = 'none';
+    try {
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+        const data = await res.json();
+        if (data.success) {
+            isLoggedIn = true;
+            document.getElementById('loginOverlay').classList.add('hidden');
+            document.getElementById('mainPanel').style.display = 'block';
+            init();
+        } else {
+            errorEl.textContent = '❌ Sai mật khẩu! Vui lòng thử lại.';
+            errorEl.classList.add('show');
             document.getElementById('loginPassword').value = '';
-            document.getElementById('loginError').classList.remove('show');
-        } catch (e) {
-            alert('❌ Lỗi đăng xuất!');
+            document.getElementById('loginPassword').focus();
         }
+    } catch (e) {
+        errorEl.textContent = '❌ Lỗi kết nối! Vui lòng thử lại.';
+        errorEl.classList.add('show');
     }
+}
 
-    // Kiểm tra trạng thái đăng nhập khi load
-    async function checkAuth() {
-        try {
-            const res = await fetch('/api/check-auth');
-            const data = await res.json();
-            if (data.authenticated) {
-                isLoggedIn = true;
-                document.getElementById('loginOverlay').classList.add('hidden');
-                document.getElementById('mainPanel').style.display = 'block';
-                init();
-            } else {
-                document.getElementById('loginOverlay').classList.remove('hidden');
-                document.getElementById('mainPanel').style.display = 'none';
-            }
-        } catch (e) {
-            document.getElementById('loginOverlay').classList.remove('hidden');
-            document.getElementById('mainPanel').style.display = 'none';
+async function doLogout() {
+    if (!confirm('🌸 Bạn có chắc muốn đăng xuất?')) return;
+    try {
+        await fetch('/api/logout', { method: 'POST' });
+        isLoggedIn = false;
+        document.getElementById('loginOverlay').classList.remove('hidden');
+        document.getElementById('mainPanel').style.display = 'none';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('loginError').classList.remove('show');
+    } catch (e) { alert('❌ Lỗi đăng xuất!'); }
+}
+
+async function checkAuth() {
+    try {
+        const res = await fetch('/api/check-auth');
+        const data = await res.json();
+        if (data.authenticated) {
+            isLoggedIn = true;
+            document.getElementById('loginOverlay').classList.add('hidden');
+            document.getElementById('mainPanel').style.display = 'block';
+            init();
         }
+    } catch (e) {}
+}
+
+// ============================================================
+//  DATA & FUNCTIONS
+// ============================================================
+let playersData = [], historyData = [], transferData = [];
+
+function switchTab(tab) {
+    document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    document.querySelector(`.tab-btn[onclick*="${tab}"]`).classList.add('active');
+}
+
+function formatMoney(amount) {
+    if (amount >= 1_000_000_000) return (amount / 1_000_000_000).toFixed(2).replace(/\.0$/, '') + 'b';
+    if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'm';
+    if (amount >= 1_000) return (amount / 1_000).toFixed(1).replace(/\.0$/, '') + 'k';
+    return amount.toString();
+}
+
+function parseMoneyInput(input) {
+    if (!input) return 0;
+    let str = input.toString().toLowerCase().trim();
+    let multiplier = 1;
+    if (str.endsWith('k')) { multiplier = 1000; str = str.slice(0, -1); }
+    else if (str.endsWith('m')) { multiplier = 1000000; str = str.slice(0, -1); }
+    else if (str.endsWith('b')) { multiplier = 1000000000; str = str.slice(0, -1); }
+    return parseFloat(str) * multiplier || 0;
+}
+
+// ============================================================
+//  API CALLS
+// ============================================================
+async function fetchDashboard() {
+    try {
+        const res = await fetch('/api/dashboard');
+        const data = await res.json();
+        document.getElementById('totalBalance').textContent = formatMoney(data.totalMoney);
+        document.getElementById('totalPlayers').textContent = data.totalPlayers;
+        document.getElementById('totalGames').textContent = `PHIÊN: ${data.totalGameCount}`;
+        document.getElementById('winRateDisplay').textContent = data.winRate + '%';
+        document.getElementById('gaiRateDisplay').textContent = data.gaiRate + '%';
+        document.getElementById('winRateInput').value = data.winRate;
+        document.getElementById('gaiRateInput').value = data.gaiRate;
+    } catch(e) { console.error(e); }
+}
+
+async function fetchPlayers() {
+    try {
+        const res = await fetch('/api/players');
+        playersData = await res.json();
+        renderPlayers(playersData);
+    } catch(e) { console.error(e); }
+}
+
+async function fetchHistory() {
+    try {
+        const res = await fetch('/api/history?limit=50');
+        historyData = await res.json();
+        renderHistory(historyData);
+    } catch(e) { console.error(e); }
+}
+
+async function fetchTransfers() {
+    try {
+        const res = await fetch('/api/transfer-history');
+        transferData = await res.json();
+        renderTransfers(transferData);
+    } catch(e) { console.error(e); }
+}
+
+async function fetchWithdrawals() {
+    try {
+        const res = await fetch('/api/withdraw/pending');
+        const data = await res.json();
+        renderWithdrawals(data);
+    } catch(e) { console.error(e); }
+}
+
+async function fetchWithdrawHistory() {
+    try {
+        const res = await fetch('/api/withdraw/history');
+        const data = await res.json();
+        renderWithdrawHistory(data);
+    } catch(e) { console.error(e); }
+}
+
+// ============================================================
+//  RENDER FUNCTIONS
+// ============================================================
+function renderPlayers(data) {
+    const tbody = document.getElementById('playersTableBody');
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có người chơi</td></tr>';
+        return;
     }
+    tbody.innerHTML = data.map((p, i) => `
+        <tr>
+            <td style="color:#553344;">${i + 1}</td>
+            <td style="color:#ff6eb4; font-weight:700;">${p.ign || 'Chưa liên kết'}</td>
+            <td>${p.username || 'Unknown'}</td>
+            <td style="color:#553344; font-size:11px;">${p.discordId || 'N/A'}</td>
+            <td style="text-align:right; color:#ff1493; font-weight:700;">${p.formatted || formatMoney(p.balance)}</td>
+            <td style="text-align:center; ${p.loseStreak >= 5 ? 'color:#ff1493; font-weight:700;' : 'color:#553344;'}">${p.loseStreak || 0}</td>
+            <td style="text-align:center;">
+                <button class="btn-danger-pink" onclick="resetStreak('${p.discordId}')">Reset</button>
+            </td>
+        </tr>
+    `).join('');
+}
 
-    // ============================================================
-    //  DATA & FUNCTIONS (GIỮ NGUYÊN)
-    // ============================================================
-    let playersData = [];
-    let historyData = [];
-    let transferData = [];
-
-    function switchTab(tab) {
-        document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        document.getElementById(`tab-${tab}`).classList.add('active');
-        document.querySelector(`.tab-btn[onclick*="${tab}"]`).classList.add('active');
+function renderHistory(data) {
+    const tbody = document.getElementById('historyTableBody');
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có lịch sử</td></tr>';
+        return;
     }
+    tbody.innerHTML = data.map((h, i) => `
+        <tr>
+            <td style="color:#553344;">#${data.length - i}</td>
+            <td><span class="${h.side === 'tai' ? 'badge-tai' : 'badge-xiu'}">${h.side === 'tai' ? '🔴 TÀI' : '🔵 XỈU'}</span></td>
+            <td>${h.dice1} - ${h.dice2} - ${h.dice3}</td>
+            <td style="font-weight:700;">${h.total}</td>
+            <td style="color:${h.side === 'tai' ? '#ff1493' : '#ff6eb4'};">${h.side === 'tai' ? '🔴 TÀI' : '🔵 XỈU'}</td>
+        </tr>
+    `).join('');
+}
 
-    function formatMoney(amount) {
-        if (amount >= 1_000_000_000) return (amount / 1_000_000_000).toFixed(2).replace(/\.0$/, '') + 'b';
-        if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'm';
-        if (amount >= 1_000) return (amount / 1_000).toFixed(1).replace(/\.0$/, '') + 'k';
-        return amount.toString();
+function renderTransfers(data) {
+    const tbody = document.getElementById('transferHistoryBody');
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có lịch sử chuyển tiền</td></tr>';
+        return;
     }
+    tbody.innerHTML = data.map(t => `
+        <tr>
+            <td style="color:#553344; font-size:12px;">${new Date(t.time).toLocaleString()}</td>
+            <td>${t.to || 'Unknown'}</td>
+            <td style="text-align:right; color:#ff1493; font-weight:700;">+${formatMoney(t.amount)}</td>
+            <td style="color:#553344; font-size:12px;">${t.note || 'Không có ghi chú'}</td>
+        </tr>
+    `).join('');
+}
 
-    function parseMoneyInput(input) {
-        if (!input) return 0;
-        let str = input.toString().toLowerCase().trim();
-        let multiplier = 1;
-        if (str.endsWith('k')) { multiplier = 1000; str = str.slice(0, -1); }
-        else if (str.endsWith('m')) { multiplier = 1000000; str = str.slice(0, -1); }
-        else if (str.endsWith('b')) { multiplier = 1000000000; str = str.slice(0, -1); }
-        return parseFloat(str) * multiplier || 0;
+function renderWithdrawals(data) {
+    const tbody = document.getElementById('withdrawTableBody');
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có yêu cầu rút tiền</td></tr>';
+        return;
     }
+    tbody.innerHTML = data.map(w => `
+        <tr>
+            <td style="color:#553344; font-size:11px;">${w.id}</td>
+            <td><@${w.userId}></td>
+            <td style="color:#ff6eb4;">${w.ign}</td>
+            <td style="text-align:right; color:#ff1493; font-weight:700;">${formatMoney(w.amount)}</td>
+            <td style="text-align:center;">
+                <button class="btn-pink-solid" style="padding:4px 12px; font-size:11px; margin-right:4px;" onclick="approveWithdraw('${w.id}')">✅ Duyệt</button>
+                <button class="btn-danger-pink" onclick="rejectWithdraw('${w.id}')">❌ Từ chối</button>
+            </td>
+        </tr>
+    `).join('');
+}
 
-    // ============================================================
-    //  API CALLS
-    // ============================================================
-    async function fetchDashboard() {
-        try {
-            const res = await fetch('/api/dashboard');
-            const data = await res.json();
-            document.getElementById('totalBalance').textContent = formatMoney(data.totalMoney);
-            document.getElementById('totalPlayers').textContent = data.totalPlayers;
-            document.getElementById('totalGames').textContent = `PHIÊN: ${data.totalGameCount}`;
-            document.getElementById('winRateDisplay').textContent = data.winRate + '%';
-            document.getElementById('gaiRateDisplay').textContent = data.gaiRate + '%';
-            document.getElementById('winRateInput').value = data.winRate;
-            document.getElementById('gaiRateInput').value = data.gaiRate;
-        } catch(e) { console.error(e); }
+function renderWithdrawHistory(data) {
+    const tbody = document.getElementById('withdrawHistoryBody');
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có lịch sử rút tiền</td></tr>';
+        return;
     }
-
-    async function fetchPlayers() {
-        try {
-            const res = await fetch('/api/players');
-            playersData = await res.json();
-            renderPlayers(playersData);
-        } catch(e) { console.error(e); }
-    }
-
-    async function fetchHistory() {
-        try {
-            const res = await fetch('/api/history?limit=50');
-            historyData = await res.json();
-            renderHistory(historyData);
-        } catch(e) { console.error(e); }
-    }
-
-    async function fetchTransfers() {
-        try {
-            const res = await fetch('/api/transfer-history');
-            transferData = await res.json();
-            renderTransfers(transferData);
-        } catch(e) { console.error(e); }
-    }
-
-    // ============================================================
-    //  RENDER FUNCTIONS
-    // ============================================================
-    function renderPlayers(data) {
-        const tbody = document.getElementById('playersTableBody');
-        if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có người chơi</td></tr>';
-            return;
-        }
-        tbody.innerHTML = data.map((p, i) => `
+    tbody.innerHTML = data.map(w => {
+        let statusText = '', color = '';
+        if (w.status === 'approved') { statusText = '✅ Đã duyệt'; color = '#22c55e'; }
+        else if (w.status === 'rejected') { statusText = '❌ Từ chối'; color = '#ef4444'; }
+        else { statusText = '⏳ Chờ duyệt'; color = '#facc15'; }
+        return `
             <tr>
-                <td style="color:#553344;">${i + 1}</td>
-                <td style="color:#ff6eb4; font-weight:700;">${p.ign || 'Chưa liên kết'}</td>
-                <td>${p.username || 'Unknown'}</td>
-                <td style="color:#553344; font-size:11px;">${p.discordId || 'N/A'}</td>
-                <td style="text-align:right; color:#ff1493; font-weight:700;">${p.formatted || formatMoney(p.balance)}</td>
-                <td style="text-align:center; ${p.loseStreak >= 5 ? 'color:#ff1493; font-weight:700;' : 'color:#553344;'}">${p.loseStreak || 0}</td>
-                <td style="text-align:center;">
-                    <button class="btn-danger-pink" onclick="resetStreak('${p.discordId}')">Reset</button>
-                </td>
+                <td style="color:#553344; font-size:12px;">${new Date(w.createdAt).toLocaleString()}</td>
+                <td><@${w.userId}></td>
+                <td style="color:#ff6eb4;">${w.ign}</td>
+                <td style="text-align:right; color:#ff1493; font-weight:700;">${formatMoney(w.amount)}</td>
+                <td style="text-align:center; color:${color};">${statusText}</td>
             </tr>
-        `).join('');
-    }
+        `;
+    }).join('');
+}
 
-    function renderHistory(data) {
-        const tbody = document.getElementById('historyTableBody');
-        if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có lịch sử</td></tr>';
-            return;
-        }
-        tbody.innerHTML = data.map((h, i) => `
-            <tr>
-                <td style="color:#553344;">#${data.length - i}</td>
-                <td><span class="${h.side === 'tai' ? 'badge-tai' : 'badge-xiu'}">${h.side === 'tai' ? '🔴 TÀI' : '🔵 XỈU'}</span></td>
-                <td>${h.dice1} - ${h.dice2} - ${h.dice3}</td>
-                <td style="font-weight:700;">${h.total}</td>
-                <td style="color:${h.side === 'tai' ? '#ff1493' : '#ff6eb4'};">${h.side === 'tai' ? '🔴 TÀI' : '🔵 XỈU'}</td>
-            </tr>
-        `).join('');
-    }
+function searchPlayers() {
+    const keyword = document.getElementById('playerSearch').value.toLowerCase();
+    const filtered = playersData.filter(p => 
+        (p.ign && p.ign.toLowerCase().includes(keyword)) ||
+        (p.username && p.username.toLowerCase().includes(keyword)) ||
+        (p.discordId && p.discordId.includes(keyword))
+    );
+    renderPlayers(filtered);
+}
 
-    function renderTransfers(data) {
-        const tbody = document.getElementById('transferHistoryBody');
-        if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có lịch sử chuyển tiền</td></tr>';
-            return;
-        }
-        tbody.innerHTML = data.map(t => `
-            <tr>
-                <td style="color:#553344; font-size:12px;">${new Date(t.time).toLocaleString()}</td>
-                <td>${t.to || 'Unknown'}</td>
-                <td style="text-align:right; color:#ff1493; font-weight:700;">+${formatMoney(t.amount)}</td>
-                <td style="color:#553344; font-size:12px;">${t.note || 'Không có ghi chú'}</td>
-            </tr>
-        `).join('');
-    }
-
-    function searchPlayers() {
-        const keyword = document.getElementById('playerSearch').value.toLowerCase();
-        const filtered = playersData.filter(p => 
-            (p.ign && p.ign.toLowerCase().includes(keyword)) ||
-            (p.username && p.username.toLowerCase().includes(keyword)) ||
-            (p.discordId && p.discordId.includes(keyword))
-        );
-        renderPlayers(filtered);
-    }
-
-    // ============================================================
-    //  ACTIONS
-    // ============================================================
-    async function doTransfer() {
-        const userId = document.getElementById('transferUserId').value.trim();
-        const amountRaw = document.getElementById('transferAmount').value.trim();
-        const note = document.getElementById('transferNote').value.trim();
-        if (!userId) { alert('🌸 Vui lòng nhập Discord ID!'); return; }
-        if (!amountRaw) { alert('🌸 Vui lòng nhập số tiền!'); return; }
-        const amount = parseMoneyInput(amountRaw);
-        if (amount <= 0) { alert('🌸 Số tiền không hợp lệ!'); return; }
-        try {
-            const res = await fetch('/api/transfer', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, amount, note })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(`✅ Chuyển thành công! Số dư mới: ${data.formatted}`);
-                document.getElementById('transferUserId').value = '';
-                document.getElementById('transferAmount').value = '';
-                document.getElementById('transferNote').value = '';
-                fetchPlayers();
-                fetchTransfers();
-                fetchDashboard();
-            } else { alert('❌ Lỗi: ' + data.error); }
-        } catch(e) { alert('❌ Lỗi kết nối!'); }
-    }
-
-    async function saveSettings() {
-        const winRate = parseInt(document.getElementById('winRateInput').value);
-        const gaiRate = parseInt(document.getElementById('gaiRateInput').value);
-        try {
-            const res = await fetch('/api/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ winRate, gaiRate })
-            });
-            const data = await res.json();
-            if (data.success) { alert('✅ Đã lưu cài đặt!'); fetchDashboard(); }
-        } catch(e) { alert('❌ Lỗi kết nối!'); }
-    }
-
-    async function saveAutoTransfer() {
-        const enabled = document.getElementById('autoEnabled').value === 'true';
-        const interval = parseInt(document.getElementById('autoInterval').value) || 0;
-        const amountRaw = document.getElementById('autoAmount').value.trim();
-        const userId = document.getElementById('autoUserId').value.trim();
-        const amount = parseMoneyInput(amountRaw);
-        try {
-            const res = await fetch('/api/auto-transfer', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ enabled, interval, amount, userId })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert('✅ Đã lưu Auto Transfer!');
-                updateAutoStatus(data.autoTransfer);
-            }
-        } catch(e) { alert('❌ Lỗi kết nối!'); }
-    }
-
-    function updateAutoStatus(auto) {
-        document.getElementById('autoStatusText').textContent = auto.enabled ? '✅ Đang bật' : '❌ Đang tắt';
-        document.getElementById('autoLastRun').textContent = auto.lastRun ? new Date(auto.lastRun).toLocaleString() : 'Chưa chạy';
-    }
-
-    async function resetStreak(userId) {
-        if (!confirm(`🌸 Reset chuỗi thua cho người chơi này?`)) return;
-        try {
-            const res = await fetch('/api/reset-streak', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId })
-            });
-            const data = await res.json();
-            if (data.success) { alert('✅ Đã reset!'); fetchPlayers(); }
-        } catch(e) { alert('❌ Lỗi kết nối!'); }
-    }
-
-    async function resetAll() {
-        const password = prompt('🌸 Nhập mật khẩu Admin để reset toàn bộ:');
-        if (!password) return;
-        try {
-            const res = await fetch('/api/reset-all', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert('✅ Đã reset toàn bộ dữ liệu!');
-                fetchDashboard();
-                fetchPlayers();
-                fetchHistory();
-                fetchTransfers();
-            } else { alert('❌ Sai mật khẩu!'); }
-        } catch(e) { alert('❌ Lỗi kết nối!'); }
-    }
-
-    // ============================================================
-    //  INIT
-    // ============================================================
-    function init() {
-        fetchDashboard();
-        fetchPlayers();
-        fetchHistory();
-        fetchTransfers();
-        setInterval(() => {
-            if (!isLoggedIn) return;
+// ============================================================
+//  ACTIONS
+// ============================================================
+async function doTransfer() {
+    const userId = document.getElementById('transferUserId').value.trim();
+    const amountRaw = document.getElementById('transferAmount').value.trim();
+    const note = document.getElementById('transferNote').value.trim();
+    if (!userId) { alert('🌸 Vui lòng nhập Discord ID!'); return; }
+    if (!amountRaw) { alert('🌸 Vui lòng nhập số tiền!'); return; }
+    const amount = parseMoneyInput(amountRaw);
+    if (amount <= 0) { alert('🌸 Số tiền không hợp lệ!'); return; }
+    try {
+        const res = await fetch('/api/transfer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, amount, note })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(`✅ Chuyển thành công! Số dư mới: ${data.formatted}`);
+            document.getElementById('transferUserId').value = '';
+            document.getElementById('transferAmount').value = '';
+            document.getElementById('transferNote').value = '';
+            fetchPlayers();
+            fetchTransfers();
             fetchDashboard();
-            if (document.getElementById('tab-players').classList.contains('active')) fetchPlayers();
-            if (document.getElementById('tab-history').classList.contains('active')) fetchHistory();
-            if (document.getElementById('tab-transfer').classList.contains('active')) fetchTransfers();
-        }, 10000);
-        document.getElementById('statusText').textContent = '● ONLINE';
-    }
+        } else { alert('❌ Lỗi: ' + data.error); }
+    } catch(e) { alert('❌ Lỗi kết nối!'); }
+}
 
-    // ============================================================
-    //  START
-    // ============================================================
-    // Kiểm tra đăng nhập khi load
-    checkAuth();
+async function doWithdraw() {
+    const userId = document.getElementById('withdrawUserId').value.trim();
+    const amountRaw = document.getElementById('withdrawAmount').value.trim();
+    const ign = document.getElementById('withdrawIgn').value.trim();
+    
+    if (!userId) { alert('🌸 Vui lòng nhập Discord ID!'); return; }
+    if (!amountRaw) { alert('🌸 Vui lòng nhập số tiền!'); return; }
+    if (!ign) { alert('🌸 Vui lòng nhập IGN!'); return; }
+    
+    const amount = parseMoneyInput(amountRaw);
+    if (amount <= 0) { alert('🌸 Số tiền không hợp lệ!'); return; }
+    if (amount < 1000000) { alert('🌸 Số tiền rút tối thiểu là 1M!'); return; }
+    if (amount > 100000000) { alert('🌸 Số tiền rút tối đa là 100M!'); return; }
+    
+    try {
+        const res = await fetch('/api/withdraw', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, amount, ign })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(`✅ ${data.message}`);
+            document.getElementById('withdrawUserId').value = '';
+            document.getElementById('withdrawAmount').value = '';
+            document.getElementById('withdrawIgn').value = '';
+            fetchWithdrawals();
+            fetchWithdrawHistory();
+        } else { alert('❌ Lỗi: ' + data.error); }
+    } catch(e) { alert('❌ Lỗi kết nối!'); }
+}
 
-    // Cho phép Enter để login
-    document.getElementById('loginPassword').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') doLogin();
-    });
+async function saveSettings() {
+    const winRate = parseInt(document.getElementById('winRateInput').value);
+    const gaiRate = parseInt(document.getElementById('gaiRateInput').value);
+    try {
+        const res = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ winRate, gaiRate })
+        });
+        const data = await res.json();
+        if (data.success) { alert('✅ Đã lưu cài đặt!'); fetchDashboard(); }
+    } catch(e) { alert('❌ Lỗi kết nối!'); }
+}
+
+async function saveAutoTransfer() {
+    const enabled = document.getElementById('autoEnabled').value === 'true';
+    const interval = parseInt(document.getElementById('autoInterval').value) || 0;
+    const amountRaw = document.getElementById('autoAmount').value.trim();
+    const userId = document.getElementById('autoUserId').value.trim();
+    const amount = parseMoneyInput(amountRaw);
+    try {
+        const res = await fetch('/api/auto-transfer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled, interval, amount, userId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('✅ Đã lưu Auto Transfer!');
+            updateAutoStatus(data.autoTransfer);
+        }
+    } catch(e) { alert('❌ Lỗi kết nối!'); }
+}
+
+function updateAutoStatus(auto) {
+    document.getElementById('autoStatusText').textContent = auto.enabled ? '✅ Đang bật' : '❌ Đang tắt';
+    document.getElementById('autoLastRun').textContent = auto.lastRun ? new Date(auto.lastRun).toLocaleString() : 'Chưa chạy';
+}
+
+async function resetStreak(userId) {
+    if (!confirm(`🌸 Reset chuỗi thua cho người chơi này?`)) return;
+    try {
+        const res = await fetch('/api/reset-streak', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId })
+        });
+        const data = await res.json();
+        if (data.success) { alert('✅ Đã reset!'); fetchPlayers(); }
+    } catch(e) { alert('❌ Lỗi kết nối!'); }
+}
+
+async function approveWithdraw(id) {
+    const password = prompt('🌸 Nhập mật khẩu Admin để duyệt:');
+    if (!password) return;
+    try {
+        const res = await fetch('/api/withdraw/approve', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('✅ Đã duyệt rút tiền!');
+            fetchWithdrawals();
+            fetchWithdrawHistory();
+            fetchPlayers();
+            fetchDashboard();
+        } else { alert('❌ ' + data.error); }
+    } catch(e) { alert('❌ Lỗi kết nối!'); }
+}
+
+async function rejectWithdraw(id) {
+    const password = prompt('🌸 Nhập mật khẩu Admin để từ chối:');
+    if (!password) return;
+    try {
+        const res = await fetch('/api/withdraw/reject', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('✅ Đã từ chối rút tiền!');
+            fetchWithdrawals();
+            fetchWithdrawHistory();
+        } else { alert('❌ ' + data.error); }
+    } catch(e) { alert('❌ Lỗi kết nối!'); }
+}
+
+async function resetAll() {
+    const password = prompt('🌸 Nhập mật khẩu Admin để reset toàn bộ:');
+    if (!password) return;
+    try {
+        const res = await fetch('/api/reset-all', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('✅ Đã reset toàn bộ dữ liệu!');
+            fetchDashboard();
+            fetchPlayers();
+            fetchHistory();
+            fetchTransfers();
+            fetchWithdrawals();
+            fetchWithdrawHistory();
+        } else { alert('❌ Sai mật khẩu!'); }
+    } catch(e) { alert('❌ Lỗi kết nối!'); }
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+function init() {
+    fetchDashboard();
+    fetchPlayers();
+    fetchHistory();
+    fetchTransfers();
+    fetchWithdrawals();
+    fetchWithdrawHistory();
+    setInterval(() => {
+        if (!isLoggedIn) return;
+        fetchDashboard();
+        if (document.getElementById('tab-players').classList.contains('active')) fetchPlayers();
+        if (document.getElementById('tab-history').classList.contains('active')) fetchHistory();
+        if (document.getElementById('tab-transfer').classList.contains('active')) fetchTransfers();
+        if (document.getElementById('tab-withdraw').classList.contains('active')) {
+            fetchWithdrawals();
+            fetchWithdrawHistory();
+        }
+    }, 15000);
+    document.getElementById('statusText').textContent = '● ONLINE';
+}
+
+// ============================================================
+//  START
+// ============================================================
+checkAuth();
+document.getElementById('loginPassword').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') doLogin();
+});
 </script>
 </body>
 </html>
