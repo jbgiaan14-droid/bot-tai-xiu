@@ -245,6 +245,11 @@ app.get('/api/withdraw/history', (req, res) => {
     res.json(pendingWithdrawals.slice(-50).reverse());
 });
 
+app.get('/api/withdraw/notifications', (req, res) => {
+    const recent = pendingWithdrawals.slice(-10).reverse();
+    res.json(recent);
+});
+
 app.post('/api/withdraw/approve', (req, res) => {
     const { id, password } = req.body;
     if (password !== 'Z0N6Hz9UzGX') {
@@ -892,14 +897,14 @@ async function startTaiXiuSession(channel, previousMsg = null) {
 }
 
 // ============================================================
-//  FINISH GAME - VỚI GIF MỚI
+//  FINISH GAME - VỚI GIF HOẠT ĐỘNG
 // ============================================================
 async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
     try {
         totalGameCount++;
         const currentSessionId = totalGameCount;
 
-        // ===== GIF LẮC XÚC XẮC MỚI (ĐẸP + CHUYỂN ĐỘNG) =====
+        // ===== GIF LẮC XÚC XẮC HOẠT ĐỘNG =====
         const rollingMsg = await channel.send('🎲 **ĐANG LẮC XÚC XẮC...**\nhttps://media.tenor.com/9yvCLdM4wLwAAAAC/dice-roll.gif');
         try { await gameMessage.delete(); } catch(e) {}
 
