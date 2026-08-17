@@ -3,475 +3,867 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎲 KingMC Gambling - Web Panel</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>🌸 KingMC Gambling - Neon Panel</title>
     <style>
-        body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; }
-        .glow-text { text-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
-        .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; backdrop-filter: blur(10px); }
-        .badge-tai { background: #ef4444; color: #fff; padding: 2px 10px; border-radius: 12px; font-size: 12px; }
-        .badge-xiu { background: #3b82f6; color: #fff; padding: 2px 10px; border-radius: 12px; font-size: 12px; }
-        .badge-win { background: #22c55e; color: #000; padding: 2px 10px; border-radius: 12px; font-size: 12px; }
-        .badge-lose { background: #ef4444; color: #fff; padding: 2px 10px; border-radius: 12px; font-size: 12px; }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Orbitron', 'Segoe UI', sans-serif;
+            background: #0a0008;
+            color: #f0e0f0;
+            min-height: 100vh;
+            padding: 20px;
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(255, 0, 150, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(255, 0, 200, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 100%, rgba(255, 0, 150, 0.05) 0%, transparent 40%);
+        }
+
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #1a1a2e; }
-        ::-webkit-scrollbar-thumb { background: #f59e0b; border-radius: 3px; }
-        .table-row:hover { background: rgba(255,215,0,0.05); }
-        .tab-btn { padding: 8px 16px; border: none; border-radius: 8px; background: #1a1a2e; color: #888; cursor: pointer; transition: all 0.2s; }
-        .tab-btn.active { background: #f59e0b; color: #1a1a2e; }
-        .tab-btn:hover:not(.active) { background: #2a2a4e; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .input-dark { background: #1a1a2e; border: 1px solid #2a2a4e; color: #fff; padding: 8px 12px; border-radius: 6px; outline: none; }
-        .input-dark:focus { border-color: #f59e0b; }
-        .btn-primary { background: #f59e0b; color: #1a1a2e; padding: 8px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
-        .btn-primary:hover { transform: scale(1.02); opacity: 0.9; }
-        .btn-danger { background: #ef4444; color: #fff; padding: 8px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-danger:hover { transform: scale(1.02); }
-        .btn-success { background: #22c55e; color: #000; padding: 8px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-success:hover { transform: scale(1.02); }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-        .status-online { background: #22c55e; }
-        .status-offline { background: #ef4444; }
+        ::-webkit-scrollbar-track { background: #1a0015; }
+        ::-webkit-scrollbar-thumb { background: #ff1493; border-radius: 3px; box-shadow: 0 0 15px #ff1493; }
+
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 20px 30px;
+            background: rgba(20, 0, 15, 0.7);
+            border: 1px solid rgba(255, 20, 147, 0.3);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            margin-bottom: 25px;
+            box-shadow: 0 0 40px rgba(255, 20, 147, 0.1);
+            transition: all 0.5s ease;
+        }
+        .header:hover {
+            border-color: rgba(255, 20, 147, 0.6);
+            box-shadow: 0 0 60px rgba(255, 20, 147, 0.2);
+        }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff1493, #ff6eb4, #ff1493);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s ease-in-out infinite;
+            text-shadow: 0 0 40px rgba(255, 20, 147, 0.3);
+        }
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff1493;
+            box-shadow: 0 0 20px #ff1493;
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+        .status-text {
+            color: #ff6eb4;
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: 2px;
+        }
+
+        /* ===== STATS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: rgba(20, 0, 15, 0.6);
+            border: 1px solid rgba(255, 20, 147, 0.15);
+            border-radius: 12px;
+            padding: 18px 22px;
+            backdrop-filter: blur(10px);
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            cursor: default;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 20, 147, 0.05), transparent);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .stat-card:hover {
+            border-color: rgba(255, 20, 147, 0.5);
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 8px 30px rgba(255, 20, 147, 0.15);
+        }
+        .stat-card:hover::before { opacity: 1; }
+        .stat-card .label {
+            font-size: 11px;
+            color: #ff6eb4;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
+        }
+        .stat-card .value {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 5px;
+            text-shadow: 0 0 30px rgba(255, 20, 147, 0.2);
+            position: relative;
+            z-index: 1;
+        }
+        .stat-card .value.pink { color: #ff1493; text-shadow: 0 0 40px rgba(255, 20, 147, 0.3); }
+        .stat-card .value.green { color: #ff6eb4; }
+
+        /* ===== TABS ===== */
+        .tab-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding: 8px;
+            background: rgba(20, 0, 15, 0.4);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 20, 147, 0.08);
+        }
+        .tab-btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 10px;
+            background: transparent;
+            color: #885577;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 13px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            letter-spacing: 1px;
+            position: relative;
+        }
+        .tab-btn:hover {
+            color: #ff6eb4;
+            background: rgba(255, 20, 147, 0.08);
+        }
+        .tab-btn.active {
+            color: #fff;
+            background: linear-gradient(135deg, rgba(255, 20, 147, 0.25), rgba(255, 20, 147, 0.05));
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.15), inset 0 0 30px rgba(255, 20, 147, 0.05);
+            border: 1px solid rgba(255, 20, 147, 0.3);
+        }
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #ff1493, transparent);
+            border-radius: 2px;
+            box-shadow: 0 0 20px #ff1493;
+        }
+
+        /* ===== PANELS ===== */
+        .panel {
+            display: none;
+            animation: fadeSlide 0.5s ease;
+        }
+        .panel.active { display: block; }
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: rgba(20, 0, 15, 0.6);
+            border: 1px solid rgba(255, 20, 147, 0.1);
+            border-radius: 14px;
+            padding: 22px 25px;
+            backdrop-filter: blur(10px);
+            transition: all 0.4s ease;
+        }
+        .card:hover {
+            border-color: rgba(255, 20, 147, 0.25);
+            box-shadow: 0 0 40px rgba(255, 20, 147, 0.05);
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ff6eb4;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+            text-shadow: 0 0 20px rgba(255, 20, 147, 0.15);
+        }
+
+        /* ===== TABLE ===== */
+        .table-wrap { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        thead th {
+            text-align: left;
+            padding: 12px 14px;
+            color: #885577;
+            font-weight: 400;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid rgba(255, 20, 147, 0.08);
+        }
+        tbody td {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255, 20, 147, 0.05);
+            transition: all 0.3s ease;
+        }
+        tbody tr {
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+        tbody tr:hover {
+            background: rgba(255, 20, 147, 0.05);
+            box-shadow: inset 0 0 30px rgba(255, 20, 147, 0.02);
+        }
+        tbody tr:hover td {
+            color: #fff;
+        }
+
+        .badge-tai {
+            background: rgba(255, 20, 147, 0.2);
+            color: #ff1493;
+            padding: 2px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid rgba(255, 20, 147, 0.2);
+        }
+        .badge-xiu {
+            background: rgba(255, 110, 180, 0.15);
+            color: #ff6eb4;
+            padding: 2px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid rgba(255, 110, 180, 0.2);
+        }
+        .badge-win {
+            color: #ff1493;
+            font-weight: 700;
+        }
+        .badge-lose {
+            color: #ff6eb4;
+        }
+
+        /* ===== INPUTS ===== */
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .input-pink {
+            flex: 1;
+            min-width: 140px;
+            padding: 10px 16px;
+            background: rgba(20, 0, 15, 0.6);
+            border: 1px solid rgba(255, 20, 147, 0.15);
+            border-radius: 10px;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.4s ease;
+        }
+        .input-pink:focus {
+            border-color: #ff1493;
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.15), inset 0 0 30px rgba(255, 20, 147, 0.03);
+            background: rgba(20, 0, 15, 0.8);
+        }
+        .input-pink::placeholder { color: #553344; }
+
+        .btn-pink {
+            padding: 10px 28px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(255, 20, 147, 0.3), rgba(255, 20, 147, 0.05));
+            color: #ff6eb4;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            border: 1px solid rgba(255, 20, 147, 0.15);
+            letter-spacing: 1px;
+        }
+        .btn-pink:hover {
+            background: linear-gradient(135deg, rgba(255, 20, 147, 0.4), rgba(255, 20, 147, 0.1));
+            box-shadow: 0 0 40px rgba(255, 20, 147, 0.2);
+            transform: translateY(-2px);
+            border-color: rgba(255, 20, 147, 0.4);
+        }
+        .btn-pink:active { transform: scale(0.97); }
+
+        .btn-pink-solid {
+            padding: 10px 28px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #ff1493, #ff6eb4);
+            color: #0a0008;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            letter-spacing: 1px;
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.2);
+        }
+        .btn-pink-solid:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 50px rgba(255, 20, 147, 0.4);
+        }
+        .btn-pink-solid:active { transform: scale(0.97); }
+
+        .btn-danger-pink {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 20, 147, 0.15);
+            color: #ff1493;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 20, 147, 0.1);
+        }
+        .btn-danger-pink:hover {
+            background: rgba(255, 20, 147, 0.25);
+            box-shadow: 0 0 20px rgba(255, 20, 147, 0.15);
+        }
+
+        /* ===== SETTINGS ROW ===== */
+        .settings-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            align-items: end;
+        }
+        .settings-row label {
+            font-size: 11px;
+            color: #885577;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* ===== AUTO STATUS ===== */
+        .auto-status {
+            margin-top: 12px;
+            padding: 12px 18px;
+            background: rgba(255, 20, 147, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 20, 147, 0.08);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            font-size: 13px;
+        }
+        .auto-status span { color: #885577; }
+        .auto-status .val { color: #ff6eb4; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .header h1 { font-size: 20px; }
+            .stat-card .value { font-size: 20px; }
+            .card { padding: 16px; }
+            .tab-btn { padding: 8px 16px; font-size: 11px; }
+            .input-pink { min-width: 100%; }
+            .settings-row { grid-template-columns: 1fr; }
+        }
+
+        /* ===== SEARCH BAR ===== */
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .search-bar .input-pink { flex: 2; min-width: 180px; }
+
+        /* Glow effect cho text */
+        .glow-pink { text-shadow: 0 0 20px rgba(255, 20, 147, 0.15); }
     </style>
 </head>
 <body>
-    <div class="container mx-auto px-4 py-6 max-w-7xl">
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
-            <div>
-                <h1 class="text-3xl font-bold glow-text text-yellow-400">🎲 KINGMC GAMBLING</h1>
-                <p class="text-gray-400 text-sm">Web Panel Quản Trị • Realtime</p>
-            </div>
-            <div class="flex items-center gap-3">
-                <span class="status-dot status-online" id="statusDot"></span>
-                <span class="text-sm text-gray-400" id="statusText">Đang kết nối...</span>
-                <span class="text-sm text-gray-400">|</span>
-                <span class="text-sm text-yellow-400" id="totalGames">Tổng phiên: 0</span>
-            </div>
-        </div>
 
-        <!-- Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="card">
-                <p class="text-gray-400 text-sm">💰 Tổng tiền</p>
-                <p class="text-2xl font-bold text-yellow-400" id="totalBalance">0</p>
-            </div>
-            <div class="card">
-                <p class="text-gray-400 text-sm">👥 Người chơi</p>
-                <p class="text-2xl font-bold text-blue-400" id="totalPlayers">0</p>
-            </div>
-            <div class="card">
-                <p class="text-gray-400 text-sm">🎯 Tỉ lệ thắng</p>
-                <p class="text-2xl font-bold text-green-400" id="winRateDisplay">60%</p>
-            </div>
-            <div class="card">
-                <p class="text-gray-400 text-sm">💀 % Gãy</p>
-                <p class="text-2xl font-bold text-red-400" id="gaiRateDisplay">85%</p>
-            </div>
+<div class="container">
+    <!-- HEADER -->
+    <header class="header">
+        <div>
+            <h1>🌸 KINGMC GAMBLING</h1>
+            <div style="font-size: 11px; color: #553344; letter-spacing: 3px; margin-top: 4px;">NEON PANEL v2.0</div>
         </div>
+        <div class="header-status">
+            <span class="status-dot"></span>
+            <span class="status-text" id="statusText">● ONLINE</span>
+            <span style="color: #553344; margin: 0 8px;">|</span>
+            <span class="status-text" id="totalGames" style="color: #885577;">PHIÊN: 0</span>
+        </div>
+    </header>
 
-        <!-- Settings -->
-        <div class="card mb-6">
-            <h2 class="text-lg font-bold text-yellow-400 mb-3">⚙️ Cài đặt hệ thống</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                    <label class="text-sm text-gray-400">🎯 Tỉ lệ thắng (%)</label>
-                    <input type="number" id="winRateInput" class="input-dark w-full" min="1" max="100" value="60">
-                </div>
-                <div>
-                    <label class="text-sm text-gray-400">💀 % Gãy</label>
-                    <input type="number" id="gaiRateInput" class="input-dark w-full" min="1" max="100" value="85">
-                </div>
-                <div class="flex items-end">
-                    <button onclick="saveSettings()" class="btn-primary">💾 Lưu</button>
-                </div>
+    <!-- STATS -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="label">💰 Tổng tiền</div>
+            <div class="value pink" id="totalBalance">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">👥 Người chơi</div>
+            <div class="value" id="totalPlayers">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">🎯 Tỉ lệ thắng</div>
+            <div class="value green" id="winRateDisplay">60%</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">💀 % Gãy</div>
+            <div class="value" id="gaiRateDisplay" style="color: #ff6eb4;">85%</div>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('players')">👤 NGƯỜI CHƠI</button>
+        <button class="tab-btn" onclick="switchTab('history')">📜 LỊCH SỬ</button>
+        <button class="tab-btn" onclick="switchTab('transfer')">💸 CHUYỂN TIỀN</button>
+        <button class="tab-btn" onclick="switchTab('auto')">🤖 AUTO</button>
+        <button class="tab-btn" onclick="switchTab('settings')">⚙️ CÀI ĐẶT</button>
+    </div>
+
+    <!-- ===== TAB: PLAYERS ===== -->
+    <div id="tab-players" class="panel active">
+        <div class="card">
+            <div class="card-title">👤 DANH SÁCH NGƯỜI CHƠI</div>
+            <div class="search-bar">
+                <input type="text" id="playerSearch" class="input-pink" placeholder="🔍 Tìm kiếm theo IGN, Discord, ID..." oninput="searchPlayers()">
             </div>
-        </div>
-
-        <!-- Tabs -->
-        <div class="flex flex-wrap gap-2 mb-4">
-            <button class="tab-btn active" onclick="switchTab('players')">👤 Người chơi</button>
-            <button class="tab-btn" onclick="switchTab('history')">📜 Lịch sử phiên</button>
-            <button class="tab-btn" onclick="switchTab('transfers')">💸 Chuyển tiền</button>
-            <button class="tab-btn" onclick="switchTab('auto')">🤖 Auto Transfer</button>
-        </div>
-
-        <!-- Tab: Players -->
-        <div id="tab-players" class="tab-content active">
-            <div class="card">
-                <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
-                    <h3 class="font-bold text-lg">👤 Danh sách người chơi</h3>
-                    <input type="text" id="playerSearch" class="input-dark" placeholder="🔍 Tìm kiếm..." oninput="searchPlayers()">
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="text-gray-400 border-b border-gray-700">
-                                <th class="text-left py-2">#</th>
-                                <th class="text-left py-2">IGN</th>
-                                <th class="text-left py-2">Discord</th>
-                                <th class="text-left py-2">ID</th>
-                                <th class="text-right py-2">Số dư</th>
-                                <th class="text-center py-2">Chuỗi thua</th>
-                                <th class="text-center py-2">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="playersTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tab: History -->
-        <div id="tab-history" class="tab-content">
-            <div class="card">
-                <h3 class="font-bold text-lg mb-3">📜 Lịch sử phiên gần nhất</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="text-gray-400 border-b border-gray-700">
-                                <th class="text-left py-2">Phiên</th>
-                                <th class="text-left py-2">Kết quả</th>
-                                <th class="text-left py-2">Xúc xắc</th>
-                                <th class="text-left py-2">Tổng</th>
-                                <th class="text-left py-2">Cửa thắng</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tab: Transfers -->
-        <div id="tab-transfers" class="tab-content">
-            <div class="card">
-                <h3 class="font-bold text-lg mb-3">💸 Chuyển tiền</h3>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-                    <input type="text" id="transferUserId" class="input-dark" placeholder="Discord ID người nhận">
-                    <input type="text" id="transferAmount" class="input-dark" placeholder="Số tiền (VD: 10m)">
-                    <input type="text" id="transferNote" class="input-dark" placeholder="Ghi chú (tùy chọn)">
-                    <button onclick="doTransfer()" class="btn-success">💸 Chuyển</button>
-                </div>
-                <h4 class="font-bold text-sm text-gray-400 mb-2">📋 Lịch sử chuyển tiền</h4>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="text-gray-400 border-b border-gray-700">
-                                <th class="text-left py-2">Thời gian</th>
-                                <th class="text-left py-2">Người nhận</th>
-                                <th class="text-right py-2">Số tiền</th>
-                                <th class="text-left py-2">Ghi chú</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transferHistoryBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tab: Auto Transfer -->
-        <div id="tab-auto" class="tab-content">
-            <div class="card">
-                <h3 class="font-bold text-lg mb-3">🤖 Auto Transfer</h3>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-                    <div>
-                        <label class="text-sm text-gray-400">Trạng thái</label>
-                        <select id="autoEnabled" class="input-dark w-full">
-                            <option value="true">✅ Bật</option>
-                            <option value="false">❌ Tắt</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-400">Khoảng cách (phút)</label>
-                        <input type="number" id="autoInterval" class="input-dark w-full" placeholder="VD: 30" value="30">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-400">Số tiền mỗi lần</label>
-                        <input type="text" id="autoAmount" class="input-dark w-full" placeholder="VD: 1m" value="1m">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-400">Discord ID người nhận</label>
-                        <input type="text" id="autoUserId" class="input-dark w-full" placeholder="Nhập ID">
-                    </div>
-                </div>
-                <button onclick="saveAutoTransfer()" class="btn-primary mt-4">💾 Lưu Auto Transfer</button>
-                <div class="mt-4 text-sm text-gray-400">
-                    <p>📌 Trạng thái: <span id="autoStatusText">Đang tắt</span></p>
-                    <p>⏱️ Lần chạy cuối: <span id="autoLastRun">Chưa chạy</span></p>
-                </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>IGN</th>
+                            <th>Discord</th>
+                            <th>ID</th>
+                            <th style="text-align:right;">Số dư</th>
+                            <th style="text-align:center;">Chuỗi thua</th>
+                            <th style="text-align:center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="playersTableBody"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <script>
-        // ============================================================
-        //  DATA
-        // ============================================================
-        let playersData = [];
-        let historyData = [];
-        let transferData = [];
+    <!-- ===== TAB: HISTORY ===== -->
+    <div id="tab-history" class="panel">
+        <div class="card">
+            <div class="card-title">📜 LỊCH SỬ PHIÊN</div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Phiên</th>
+                            <th>Kết quả</th>
+                            <th>Xúc xắc</th>
+                            <th>Tổng</th>
+                            <th>Cửa thắng</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-        // ============================================================
-        //  FUNCTIONS
-        // ============================================================
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            document.querySelector(`.tab-btn[onclick*="${tab}"]`).classList.add('active');
+    <!-- ===== TAB: TRANSFER ===== -->
+    <div id="tab-transfer" class="panel">
+        <div class="card">
+            <div class="card-title">💸 CHUYỂN TIỀN</div>
+            <div class="input-group">
+                <input type="text" id="transferUserId" class="input-pink" placeholder="Discord ID người nhận">
+                <input type="text" id="transferAmount" class="input-pink" placeholder="Số tiền (VD: 10m)">
+                <input type="text" id="transferNote" class="input-pink" placeholder="Ghi chú (tùy chọn)">
+                <button class="btn-pink-solid" onclick="doTransfer()">💸 CHUYỂN</button>
+            </div>
+            <div class="card-title" style="font-size:14px; margin-top:20px;">📋 LỊCH SỬ CHUYỂN TIỀN</div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Người nhận</th>
+                            <th style="text-align:right;">Số tiền</th>
+                            <th>Ghi chú</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transferHistoryBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TAB: AUTO ===== -->
+    <div id="tab-auto" class="panel">
+        <div class="card">
+            <div class="card-title">🤖 AUTO TRANSFER</div>
+            <div class="settings-row">
+                <div>
+                    <label>Trạng thái</label>
+                    <select id="autoEnabled" class="input-pink" style="width:100%;">
+                        <option value="true">✅ Bật</option>
+                        <option value="false" selected>❌ Tắt</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Khoảng cách (phút)</label>
+                    <input type="number" id="autoInterval" class="input-pink" style="width:100%;" placeholder="30" value="30">
+                </div>
+                <div>
+                    <label>Số tiền mỗi lần</label>
+                    <input type="text" id="autoAmount" class="input-pink" style="width:100%;" placeholder="1m" value="1m">
+                </div>
+                <div>
+                    <label>Discord ID người nhận</label>
+                    <input type="text" id="autoUserId" class="input-pink" style="width:100%;" placeholder="Nhập ID">
+                </div>
+            </div>
+            <button class="btn-pink-solid" style="margin-top:15px;" onclick="saveAutoTransfer()">💾 LƯU AUTO</button>
+            <div class="auto-status">
+                <div>📌 Trạng thái: <span class="val" id="autoStatusText">Đang tắt</span></div>
+                <div>⏱️ Lần chạy cuối: <span class="val" id="autoLastRun">Chưa chạy</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TAB: SETTINGS ===== -->
+    <div id="tab-settings" class="panel">
+        <div class="card">
+            <div class="card-title">⚙️ CÀI ĐẶT HỆ THỐNG</div>
+            <div class="settings-row">
+                <div>
+                    <label>🎯 Tỉ lệ thắng (%)</label>
+                    <input type="number" id="winRateInput" class="input-pink" style="width:100%;" min="1" max="100" value="60">
+                </div>
+                <div>
+                    <label>💀 % Gãy</label>
+                    <input type="number" id="gaiRateInput" class="input-pink" style="width:100%;" min="1" max="100" value="85">
+                </div>
+                <div style="display:flex; align-items:end;">
+                    <button class="btn-pink-solid" onclick="saveSettings()">💾 LƯU</button>
+                </div>
+            </div>
+            <hr style="border-color: rgba(255,20,147,0.1); margin: 20px 0;">
+            <div>
+                <button class="btn-danger-pink" onclick="resetAll()" style="padding:10px 24px; font-size:13px;">🗑️ RESET TOÀN BỘ</button>
+                <span style="color:#553344; font-size:12px; margin-left:12px;">(Xóa tất cả dữ liệu - cần mật khẩu)</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    //  DATA
+    // ============================================================
+    let playersData = [];
+    let historyData = [];
+    let transferData = [];
+    let autoData = {};
+
+    // ============================================================
+    //  FUNCTIONS
+    // ============================================================
+    function switchTab(tab) {
+        document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(`tab-${tab}`).classList.add('active');
+        document.querySelector(`.tab-btn[onclick*="${tab}"]`).classList.add('active');
+    }
+
+    function formatMoney(amount) {
+        if (amount >= 1_000_000_000) return (amount / 1_000_000_000).toFixed(2).replace(/\.0$/, '') + 'b';
+        if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'm';
+        if (amount >= 1_000) return (amount / 1_000).toFixed(1).replace(/\.0$/, '') + 'k';
+        return amount.toString();
+    }
+
+    function parseMoneyInput(input) {
+        if (!input) return 0;
+        let str = input.toString().toLowerCase().trim();
+        let multiplier = 1;
+        if (str.endsWith('k')) { multiplier = 1000; str = str.slice(0, -1); }
+        else if (str.endsWith('m')) { multiplier = 1000000; str = str.slice(0, -1); }
+        else if (str.endsWith('b')) { multiplier = 1000000000; str = str.slice(0, -1); }
+        return parseFloat(str) * multiplier || 0;
+    }
+
+    // ============================================================
+    //  API CALLS
+    // ============================================================
+    async function fetchDashboard() {
+        try {
+            const res = await fetch('/api/dashboard');
+            const data = await res.json();
+            document.getElementById('totalBalance').textContent = formatMoney(data.totalMoney);
+            document.getElementById('totalPlayers').textContent = data.totalPlayers;
+            document.getElementById('totalGames').textContent = `PHIÊN: ${data.totalGameCount}`;
+            document.getElementById('winRateDisplay').textContent = data.winRate + '%';
+            document.getElementById('gaiRateDisplay').textContent = data.gaiRate + '%';
+            document.getElementById('winRateInput').value = data.winRate;
+            document.getElementById('gaiRateInput').value = data.gaiRate;
+        } catch(e) { console.error(e); }
+    }
+
+    async function fetchPlayers() {
+        try {
+            const res = await fetch('/api/players');
+            playersData = await res.json();
+            renderPlayers(playersData);
+        } catch(e) { console.error(e); }
+    }
+
+    async function fetchHistory() {
+        try {
+            const res = await fetch('/api/history?limit=50');
+            historyData = await res.json();
+            renderHistory(historyData);
+        } catch(e) { console.error(e); }
+    }
+
+    async function fetchTransfers() {
+        try {
+            const res = await fetch('/api/transfer-history');
+            transferData = await res.json();
+            renderTransfers(transferData);
+        } catch(e) { console.error(e); }
+    }
+
+    // ============================================================
+    //  RENDER FUNCTIONS
+    // ============================================================
+    function renderPlayers(data) {
+        const tbody = document.getElementById('playersTableBody');
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có người chơi</td></tr>';
+            return;
         }
+        tbody.innerHTML = data.map((p, i) => `
+            <tr>
+                <td style="color:#553344;">${i + 1}</td>
+                <td style="color:#ff6eb4; font-weight:700;">${p.ign || 'Chưa liên kết'}</td>
+                <td>${p.username || 'Unknown'}</td>
+                <td style="color:#553344; font-size:11px;">${p.discordId || 'N/A'}</td>
+                <td style="text-align:right; color:#ff1493; font-weight:700;">${p.formatted || formatMoney(p.balance)}</td>
+                <td style="text-align:center; ${p.loseStreak >= 5 ? 'color:#ff1493; font-weight:700;' : 'color:#553344;'}">${p.loseStreak || 0}</td>
+                <td style="text-align:center;">
+                    <button class="btn-danger-pink" onclick="resetStreak('${p.discordId}')">Reset</button>
+                </td>
+            </tr>
+        `).join('');
+    }
 
-        function formatMoney(amount) {
-            if (amount >= 1_000_000_000) return (amount / 1_000_000_000).toFixed(2).replace(/\.0$/, '') + 'b';
-            if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'm';
-            if (amount >= 1_000) return (amount / 1_000).toFixed(1).replace(/\.0$/, '') + 'k';
-            return amount.toString();
+    function renderHistory(data) {
+        const tbody = document.getElementById('historyTableBody');
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có lịch sử</td></tr>';
+            return;
         }
+        tbody.innerHTML = data.map((h, i) => `
+            <tr>
+                <td style="color:#553344;">#${data.length - i}</td>
+                <td><span class="${h.side === 'tai' ? 'badge-tai' : 'badge-xiu'}">${h.side === 'tai' ? '🔴 TÀI' : '🔵 XỈU'}</span></td>
+                <td>${h.dice1} - ${h.dice2} - ${h.dice3}</td>
+                <td style="font-weight:700;">${h.total}</td>
+                <td style="color:${h.side === 'tai' ? '#ff1493' : '#ff6eb4'};">${h.side === 'tai' ? '🔴 TÀI' : '🔵 XỈU'}</td>
+            </tr>
+        `).join('');
+    }
 
-        function parseMoneyInput(input) {
-            if (!input) return 0;
-            let str = input.toString().toLowerCase().trim();
-            let multiplier = 1;
-            if (str.endsWith('k')) { multiplier = 1000; str = str.slice(0, -1); }
-            else if (str.endsWith('m')) { multiplier = 1000000; str = str.slice(0, -1); }
-            else if (str.endsWith('b')) { multiplier = 1000000000; str = str.slice(0, -1); }
-            return parseFloat(str) * multiplier || 0;
+    function renderTransfers(data) {
+        const tbody = document.getElementById('transferHistoryBody');
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có lịch sử chuyển tiền</td></tr>';
+            return;
         }
+        tbody.innerHTML = data.map(t => `
+            <tr>
+                <td style="color:#553344; font-size:12px;">${new Date(t.time).toLocaleString()}</td>
+                <td>${t.to || 'Unknown'}</td>
+                <td style="text-align:right; color:#ff1493; font-weight:700;">+${formatMoney(t.amount)}</td>
+                <td style="color:#553344; font-size:12px;">${t.note || 'Không có ghi chú'}</td>
+            </tr>
+        `).join('');
+    }
 
-        // ============================================================
-        //  API CALLS
-        // ============================================================
-        async function fetchDashboard() {
-            try {
-                const res = await fetch('/api/dashboard');
-                const data = await res.json();
-                document.getElementById('totalBalance').textContent = formatMoney(data.totalMoney) + ' Gambling';
-                document.getElementById('totalPlayers').textContent = data.totalPlayers;
-                document.getElementById('totalGames').textContent = `Tổng phiên: ${data.totalGameCount}`;
-                document.getElementById('winRateDisplay').textContent = data.winRate + '%';
-                document.getElementById('gaiRateDisplay').textContent = data.gaiRate + '%';
-                document.getElementById('winRateInput').value = data.winRate;
-                document.getElementById('gaiRateInput').value = data.gaiRate;
-            } catch(e) { console.error(e); }
-        }
+    function searchPlayers() {
+        const keyword = document.getElementById('playerSearch').value.toLowerCase();
+        const filtered = playersData.filter(p => 
+            (p.ign && p.ign.toLowerCase().includes(keyword)) ||
+            (p.username && p.username.toLowerCase().includes(keyword)) ||
+            (p.discordId && p.discordId.includes(keyword))
+        );
+        renderPlayers(filtered);
+    }
 
-        async function fetchPlayers() {
-            try {
-                const res = await fetch('/api/players');
-                playersData = await res.json();
-                renderPlayers(playersData);
-            } catch(e) { console.error(e); }
-        }
-
-        async function fetchHistory() {
-            try {
-                const res = await fetch('/api/history?limit=50');
-                historyData = await res.json();
-                renderHistory(historyData);
-            } catch(e) { console.error(e); }
-        }
-
-        async function fetchTransfers() {
-            try {
-                const res = await fetch('/api/transfer-history');
-                transferData = await res.json();
-                renderTransfers(transferData);
-            } catch(e) { console.error(e); }
-        }
-
-        async function fetchAutoTransfer() {
-            try {
-                const res = await fetch('/api/dashboard');
-                // Auto transfer data sẽ được lấy từ dashboard hoặc riêng
-            } catch(e) { console.error(e); }
-        }
-
-        // ============================================================
-        //  RENDER FUNCTIONS
-        // ============================================================
-        function renderPlayers(data) {
-            const tbody = document.getElementById('playersTableBody');
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-4">Chưa có người chơi</td></tr>';
-                return;
-            }
-            tbody.innerHTML = data.map((p, i) => `
-                <tr class="table-row border-b border-gray-800">
-                    <td class="py-2">${i + 1}</td>
-                    <td class="py-2 font-bold text-yellow-400">${p.ign || 'Chưa liên kết'}</td>
-                    <td class="py-2">${p.username || 'Unknown'}</td>
-                    <td class="py-2 text-gray-400 text-xs">${p.discordId || 'N/A'}</td>
-                    <td class="py-2 text-right text-green-400 font-bold">${p.formatted || formatMoney(p.balance)}</td>
-                    <td class="py-2 text-center ${p.loseStreak >= 5 ? 'text-red-400 font-bold' : 'text-gray-400'}">${p.loseStreak || 0}</td>
-                    <td class="py-2 text-center">
-                        <button onclick="resetStreak('${p.discordId}')" class="text-xs bg-yellow-500 text-black px-2 py-1 rounded hover:bg-yellow-400">Reset</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function renderHistory(data) {
-            const tbody = document.getElementById('historyTableBody');
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400 py-4">Chưa có lịch sử</td></tr>';
-                return;
-            }
-            tbody.innerHTML = data.map((h, i) => `
-                <tr class="table-row border-b border-gray-800">
-                    <td class="py-2">#${data.length - i}</td>
-                    <td class="py-2"><span class="${h.side === 'tai' ? 'badge-tai' : 'badge-xiu'}">${h.side === 'tai' ? '🔴 TÀI' : '🔵 XỈU'}</span></td>
-                    <td class="py-2">${h.dice1} - ${h.dice2} - ${h.dice3}</td>
-                    <td class="py-2 font-bold">${h.total}</td>
-                    <td class="py-2 ${h.side === 'tai' ? 'text-red-400' : 'text-blue-400'}">${h.side === 'tai' ? '🔴 TÀI' : '🔵 XỈU'}</td>
-                </tr>
-            `).join('');
-        }
-
-        function renderTransfers(data) {
-            const tbody = document.getElementById('transferHistoryBody');
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-400 py-4">Chưa có lịch sử chuyển tiền</td></tr>';
-                return;
-            }
-            tbody.innerHTML = data.map(t => `
-                <tr class="table-row border-b border-gray-800">
-                    <td class="py-2 text-gray-400 text-xs">${new Date(t.time).toLocaleString()}</td>
-                    <td class="py-2">${t.to || 'Unknown'}</td>
-                    <td class="py-2 text-right text-green-400 font-bold">+${formatMoney(t.amount)}</td>
-                    <td class="py-2 text-gray-400 text-xs">${t.note || 'Không có ghi chú'}</td>
-                </tr>
-            `).join('');
-        }
-
-        function searchPlayers() {
-            const keyword = document.getElementById('playerSearch').value.toLowerCase();
-            const filtered = playersData.filter(p => 
-                (p.ign && p.ign.toLowerCase().includes(keyword)) ||
-                (p.username && p.username.toLowerCase().includes(keyword)) ||
-                (p.discordId && p.discordId.includes(keyword))
-            );
-            renderPlayers(filtered);
-        }
-
-        // ============================================================
-        //  ACTIONS
-        // ============================================================
-        async function doTransfer() {
-            const userId = document.getElementById('transferUserId').value.trim();
-            const amountRaw = document.getElementById('transferAmount').value.trim();
-            const note = document.getElementById('transferNote').value.trim();
-            
-            if (!userId) { alert('Vui lòng nhập Discord ID người nhận!'); return; }
-            if (!amountRaw) { alert('Vui lòng nhập số tiền!'); return; }
-            
-            const amount = parseMoneyInput(amountRaw);
-            if (amount <= 0) { alert('Số tiền không hợp lệ!'); return; }
-            
-            try {
-                const res = await fetch('/api/transfer', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId, amount, note })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(`✅ Chuyển thành công! Số dư mới: ${data.formatted}`);
-                    document.getElementById('transferUserId').value = '';
-                    document.getElementById('transferAmount').value = '';
-                    document.getElementById('transferNote').value = '';
-                    fetchPlayers();
-                    fetchTransfers();
-                    fetchDashboard();
-                } else {
-                    alert('❌ Lỗi: ' + data.error);
-                }
-            } catch(e) { alert('❌ Lỗi kết nối!'); }
-        }
-
-        async function saveSettings() {
-            const winRate = parseInt(document.getElementById('winRateInput').value);
-            const gaiRate = parseInt(document.getElementById('gaiRateInput').value);
-            
-            try {
-                const res = await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ winRate, gaiRate })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert('✅ Đã lưu cài đặt!');
-                    fetchDashboard();
-                }
-            } catch(e) { alert('❌ Lỗi kết nối!'); }
-        }
-
-        async function saveAutoTransfer() {
-            const enabled = document.getElementById('autoEnabled').value === 'true';
-            const interval = parseInt(document.getElementById('autoInterval').value) || 0;
-            const amountRaw = document.getElementById('autoAmount').value.trim();
-            const userId = document.getElementById('autoUserId').value.trim();
-            
-            const amount = parseMoneyInput(amountRaw);
-            
-            try {
-                const res = await fetch('/api/auto-transfer', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ enabled, interval, amount, userId })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert('✅ Đã lưu Auto Transfer!');
-                    updateAutoStatus(data.autoTransfer);
-                }
-            } catch(e) { alert('❌ Lỗi kết nối!'); }
-        }
-
-        function updateAutoStatus(auto) {
-            document.getElementById('autoStatusText').textContent = auto.enabled ? '✅ Đang bật' : '❌ Đang tắt';
-            document.getElementById('autoLastRun').textContent = auto.lastRun ? new Date(auto.lastRun).toLocaleString() : 'Chưa chạy';
-        }
-
-        async function resetStreak(userId) {
-            if (!confirm(`Reset chuỗi thua cho người chơi này?`)) return;
-            try {
-                const res = await fetch('/api/reset-streak', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert('✅ Đã reset!');
-                    fetchPlayers();
-                }
-            } catch(e) { alert('❌ Lỗi kết nối!'); }
-        }
-
-        // ============================================================
-        //  INIT
-        // ============================================================
-        function init() {
-            fetchDashboard();
-            fetchPlayers();
-            fetchHistory();
-            fetchTransfers();
-            
-            // Auto refresh mỗi 10 giây
-            setInterval(() => {
+    // ============================================================
+    //  ACTIONS
+    // ============================================================
+    async function doTransfer() {
+        const userId = document.getElementById('transferUserId').value.trim();
+        const amountRaw = document.getElementById('transferAmount').value.trim();
+        const note = document.getElementById('transferNote').value.trim();
+        if (!userId) { alert('🌸 Vui lòng nhập Discord ID!'); return; }
+        if (!amountRaw) { alert('🌸 Vui lòng nhập số tiền!'); return; }
+        const amount = parseMoneyInput(amountRaw);
+        if (amount <= 0) { alert('🌸 Số tiền không hợp lệ!'); return; }
+        try {
+            const res = await fetch('/api/transfer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, amount, note })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`✅ Chuyển thành công! Số dư mới: ${data.formatted}`);
+                document.getElementById('transferUserId').value = '';
+                document.getElementById('transferAmount').value = '';
+                document.getElementById('transferNote').value = '';
+                fetchPlayers();
+                fetchTransfers();
                 fetchDashboard();
-                if (document.getElementById('tab-players').classList.contains('active')) fetchPlayers();
-                if (document.getElementById('tab-history').classList.contains('active')) fetchHistory();
-                if (document.getElementById('tab-transfers').classList.contains('active')) fetchTransfers();
-            }, 10000);
-            
-            document.getElementById('statusText').textContent = '✅ Online';
-        }
+            } else { alert('❌ Lỗi: ' + data.error); }
+        } catch(e) { alert('❌ Lỗi kết nối!'); }
+    }
 
-        init();
-    </script>
+    async function saveSettings() {
+        const winRate = parseInt(document.getElementById('winRateInput').value);
+        const gaiRate = parseInt(document.getElementById('gaiRateInput').value);
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ winRate, gaiRate })
+            });
+            const data = await res.json();
+            if (data.success) { alert('✅ Đã lưu cài đặt!'); fetchDashboard(); }
+        } catch(e) { alert('❌ Lỗi kết nối!'); }
+    }
+
+    async function saveAutoTransfer() {
+        const enabled = document.getElementById('autoEnabled').value === 'true';
+        const interval = parseInt(document.getElementById('autoInterval').value) || 0;
+        const amountRaw = document.getElementById('autoAmount').value.trim();
+        const userId = document.getElementById('autoUserId').value.trim();
+        const amount = parseMoneyInput(amountRaw);
+        try {
+            const res = await fetch('/api/auto-transfer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled, interval, amount, userId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('✅ Đã lưu Auto Transfer!');
+                updateAutoStatus(data.autoTransfer);
+            }
+        } catch(e) { alert('❌ Lỗi kết nối!'); }
+    }
+
+    function updateAutoStatus(auto) {
+        document.getElementById('autoStatusText').textContent = auto.enabled ? '✅ Đang bật' : '❌ Đang tắt';
+        document.getElementById('autoLastRun').textContent = auto.lastRun ? new Date(auto.lastRun).toLocaleString() : 'Chưa chạy';
+    }
+
+    async function resetStreak(userId) {
+        if (!confirm(`🌸 Reset chuỗi thua cho người chơi này?`)) return;
+        try {
+            const res = await fetch('/api/reset-streak', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId })
+            });
+            const data = await res.json();
+            if (data.success) { alert('✅ Đã reset!'); fetchPlayers(); }
+        } catch(e) { alert('❌ Lỗi kết nối!'); }
+    }
+
+    async function resetAll() {
+        const password = prompt('🌸 Nhập mật khẩu Admin để reset toàn bộ:');
+        if (!password) return;
+        try {
+            const res = await fetch('/api/reset-all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('✅ Đã reset toàn bộ dữ liệu!');
+                fetchDashboard();
+                fetchPlayers();
+                fetchHistory();
+                fetchTransfers();
+            } else { alert('❌ Sai mật khẩu!'); }
+        } catch(e) { alert('❌ Lỗi kết nối!'); }
+    }
+
+    // ============================================================
+    //  INIT
+    // ============================================================
+    function init() {
+        fetchDashboard();
+        fetchPlayers();
+        fetchHistory();
+        fetchTransfers();
+        setInterval(() => {
+            fetchDashboard();
+            if (document.getElementById('tab-players').classList.contains('active')) fetchPlayers();
+            if (document.getElementById('tab-history').classList.contains('active')) fetchHistory();
+            if (document.getElementById('tab-transfer').classList.contains('active')) fetchTransfers();
+        }, 10000);
+        document.getElementById('statusText').textContent = '● ONLINE';
+    }
+
+    init();
+</script>
 </body>
 </html>
