@@ -55,7 +55,8 @@ function loadData() {
     return { 
         balances: {}, 
         gameHistory: [], 
-        transferHistory: [],
+        bauCuaHistory: [],
+        transferHistory: [], 
         totalGameCount: 891193,
         winRate: 60,
         gaiRate: 85,
@@ -70,6 +71,7 @@ function saveData() {
         fs.writeFileSync(DATA_FILE, JSON.stringify({
             balances: balances,
             gameHistory: gameHistory.slice(-200),
+            bauCuaHistory: bauCuaHistory.slice(-200),
             transferHistory: transferHistory.slice(-100),
             totalGameCount: totalGameCount,
             winRate: WIN_RATE,
@@ -191,6 +193,7 @@ app.post('/api/reset-all', (req, res) => {
     if (password !== 'Z0N6Hz9UzGX') return res.status(403).json({ error: 'Sai mật khẩu!' });
     balances = {};
     gameHistory = [];
+    bauCuaHistory = [];
     totalGameCount = 891193;
     userLoseStreaks = {};
     userBetHistory = {};
@@ -243,11 +246,6 @@ app.get('/api/withdraw/pending', (req, res) => {
 
 app.get('/api/withdraw/history', (req, res) => {
     res.json(pendingWithdrawals.slice(-50).reverse());
-});
-
-app.get('/api/withdraw/notifications', (req, res) => {
-    const recent = pendingWithdrawals.slice(-10).reverse();
-    res.json(recent);
 });
 
 app.post('/api/withdraw/approve', (req, res) => {
@@ -363,7 +361,9 @@ const PAY_BOT_NAME = 'giaanday2121';
 // ===== VARIABLES =====
 let balances = {};
 let gameHistory = [];
+let bauCuaHistory = [];
 let activeSessions = {};
+let activeBauCuaSessions = {};
 let pendingDeposits = {};
 let ignToDiscordMap = {};
 let userLoseStreaks = {};
@@ -374,6 +374,17 @@ let WIN_RATE = 60;
 let GAI_RATE = 85;
 let autoTransfer = { enabled: false, interval: 0, amount: 1000000, userId: null, lastRun: null };
 
+// ===== BẦU CUA CONSTANTS =====
+const LINH_VAT = ["Bầu", "Cua", "Tôm", "Cá", "Gà", "Nai"];
+const LINH_VAT_EMOJI = {
+    "Bầu": "🍈",
+    "Cua": "🦀",
+    "Tôm": "🦐",
+    "Cá": "🐟",
+    "Gà": "🐔",
+    "Nai": "🦌"
+};
+
 // ===== ID KHÔNG GIỚI HẠN CƯỢC =====
 const UNLIMITED_IDS = ['1291949040719630357', '1130441780479922176'];
 const MAX_BET = 50000000; // 50 triệu
@@ -382,6 +393,7 @@ const MAX_BET = 50000000; // 50 triệu
 const saved = loadData();
 balances = saved.balances || {};
 gameHistory = saved.gameHistory || [];
+bauCuaHistory = saved.bauCuaHistory || [];
 totalGameCount = saved.totalGameCount || 891193;
 transferHistory = saved.transferHistory || [];
 WIN_RATE = saved.winRate || 60;
@@ -412,6 +424,38 @@ function parseMoney(input, userId) {
     else if (str.endsWith('b')) { multiplier = 1_000_000_000; str = str.slice(0, -1); }
     let num = parseFloat(str);
     return isNaN(num) ? NaN : Math.floor(num * multiplier);
+}
+
+// ===== BẦU CUA FUNCTIONS =====
+function throwBauCua() {
+    return [
+        LINH_VAT[Math.floor(Math.random() * LINH_VAT.length)],
+        LINH_VAT[Math.floor(Math.random() * LINH_VAT.length)],
+        LINH_VAT[Math.floor(Math.random() * LINH_VAT.length)]
+    ];
+}
+
+function calculateBauCuaResult(bets, result) {
+    let totalWin = 0;
+    let details = [];
+    let totalBet = 0;
+
+    for (const linhVat of LINH_VAT) {
+        const betAmount = bets[linhVat] || 0;
+        totalBet += betAmount;
+        const count = result.filter(r => r === linhVat).length;
+        
+        if (count > 0 && betAmount > 0) {
+            const winAmount = betAmount * count;
+            totalWin += winAmount;
+            details.push(`**${LINH_VAT_EMOJI[linhVat]} ${linhVat}**: ra ${count} lần → +${formatMoneyFull(winAmount)} (gốc ${formatMoneyFull(betAmount)})`);
+        } else if (betAmount > 0) {
+            details.push(`**${LINH_VAT_EMOJI[linhVat]} ${linhVat}**: không ra → -${formatMoneyFull(betAmount)} (mất)`);
+        }
+    }
+
+    const profit = totalWin - totalBet;
+    return { profit, details, totalBet, totalWin, result };
 }
 
 // ===== WEBHOOK =====
@@ -514,13 +558,29 @@ client.on('messageCreate', async (message) => {
         try { await message.delete(); } catch(e) {}
         startTaiXiuSession(message.channel);
     }
+
+    // ===== BẦU CUA COMMAND =====
+    if (content === '!bc' || content === '!baucua') {
+        if (message.channel.id !== ALLOWED_CHANNEL_ID) {
+            return message.reply({ content: `❌ Lệnh này chỉ được dùng tại kênh <#${ALLOWED_CHANNEL_ID}> thôi nhé!`, ephemeral: true });
+        }
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return message.reply({ content: '❌ Chỉ có Quản trị viên (Admin) mới có quyền khởi tạo phiên Bầu Cua!', ephemeral: true });
+        }
+        if (activeBauCuaSessions[message.channel.id]) {
+            return message.reply({ content: '⚠️ Phiên Bầu Cua đang chạy trong kênh này rồi!', ephemeral: true });
+        }
+        try { await message.delete(); } catch(e) {}
+        startBauCuaSession(message.channel);
+    }
 });
 
 // ============================================================
-//  INTERACTION CREATE - TÀI XỈU
+//  INTERACTION CREATE - TÀI XỈU & BẦU CUA
 // ============================================================
 client.on('interactionCreate', async (i) => {
     const session = activeSessions[i.channelId];
+    const bauCuaSession = activeBauCuaSessions[i.channelId];
 
     if (i.isButton()) {
         if (i.customId === 'btn_open_nap') {
@@ -590,7 +650,7 @@ client.on('interactionCreate', async (i) => {
             const embed = new EmbedBuilder()
                 .setColor(0xfacc15)
                 .setTitle('📖 HƯỚNG DẪN HỆ THỐNG NỘI BỘ')
-                .setDescription('• **Nạp Gambling**: Gửi yêu cầu nạp điểm vào ví.\n• **Rút Gambling**: Rút tiền từ ví về nhân vật trong game.\n• **Chuyển tiền**: Tặng Gambling trực tiếp cho người chơi khác qua Discord ID.\n• **Tài Xỉu**: Giải trí tại kênh `#gambling🎲`.');
+                .setDescription('• **Nạp Gambling**: Gửi yêu cầu nạp điểm vào ví.\n• **Rút Gambling**: Rút tiền từ ví về nhân vật trong game.\n• **Chuyển tiền**: Tặng Gambling trực tiếp cho người chơi khác qua Discord ID.\n• **Tài Xỉu**: Giải trí tại kênh `#gambling🎲`.\n• **Bầu Cua**: Giải trí với Bầu Cua tại kênh `#gambling🎲`.');
             return i.reply({ embeds: [embed], ephemeral: true });
         }
 
@@ -679,9 +739,6 @@ client.on('interactionCreate', async (i) => {
             return await i.reply({ content: `✅ Đã tạo yêu cầu rút **${formatMoneyFull(amount)}** về nhân vật **${ign}** thành công!`, ephemeral: true });
         }
 
-        // ============================================================
-        //  MODAL CHUYỂN TIỀN
-        // ============================================================
         if (i.customId === 'modal_chuyen') {
             let targetInput = i.fields.getTextInputValue('chuyen_target').replace(/[<@!>]/g, '').trim();
             const rawAmount = i.fields.getTextInputValue('chuyen_amount');
@@ -738,6 +795,7 @@ client.on('interactionCreate', async (i) => {
         }
     }
 
+    // ===== TÀI XỈU BET BUTTON =====
     if (i.isButton() && (i.customId === 'bet_tai' || i.customId === 'bet_xiu')) {
         if (!session) return i.reply({ content: '❌ Phiên đã kết thúc!', ephemeral: true });
         if (session.timeLeft <= 5) return i.reply({ content: '❌ Đã khóa cược!', ephemeral: true });
@@ -759,7 +817,6 @@ client.on('interactionCreate', async (i) => {
         return await i.showModal(modal);
     }
 
-    // ===== MODAL ĐẶT CƯỢC =====
     if (i.isModalSubmit() && i.customId.startsWith('modal_bet_')) {
         if (!session) return i.reply({ content: '❌ Phiên đã kết thúc!', ephemeral: true });
 
@@ -799,6 +856,76 @@ client.on('interactionCreate', async (i) => {
         return;
     }
 
+    // ===== BẦU CUA BET BUTTON =====
+    if (i.isButton() && i.customId.startsWith('bet_bc_')) {
+        const linhVat = i.customId.replace('bet_bc_', '');
+        if (!LINH_VAT.includes(linhVat)) return;
+
+        if (!bauCuaSession) return i.reply({ content: '❌ Phiên Bầu Cua đã kết thúc!', ephemeral: true });
+        if (bauCuaSession.timeLeft <= 5) return i.reply({ content: '❌ Đã khóa cược!', ephemeral: true });
+        if (bauCuaSession.userBets[i.user.id]) return i.reply({ content: '❌ Bạn đã đặt cược ở phiên này rồi!', ephemeral: true });
+
+        const modal = new ModalBuilder()
+            .setCustomId(`modal_bc_${linhVat}`)
+            .setTitle(`ĐẶT CƯỢC ${linhVat.toUpperCase()}`);
+
+        const amountInput = new TextInputBuilder()
+            .setCustomId('amount_input')
+            .setLabel(`Nhập số tiền cược ${linhVat}:`)
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('VD: 1m, 20m, 500k')
+            .setRequired(true);
+
+        modal.addComponents(new ActionRowBuilder().addComponents(amountInput));
+        return await i.showModal(modal);
+    }
+
+    if (i.isModalSubmit() && i.customId.startsWith('modal_bc_')) {
+        const linhVat = i.customId.replace('modal_bc_', '');
+        if (!LINH_VAT.includes(linhVat)) return;
+
+        if (!bauCuaSession) return i.reply({ content: '❌ Phiên đã kết thúc!', ephemeral: true });
+
+        const rawAmount = i.fields.getTextInputValue('amount_input').trim();
+        let amount = parseMoney(rawAmount, i.user.id);
+
+        if (isNaN(amount) || amount < 5000) {
+            return i.reply({ content: '❌ Vui lòng nhập số tiền hợp lệ (tối thiểu 5,000 Gambling)!', ephemeral: true });
+        }
+
+        if (!UNLIMITED_IDS.includes(i.user.id) && amount > MAX_BET) {
+            return i.reply({
+                content: `❌ Số tiền cược vượt quá giới hạn **${formatMoneyFull(MAX_BET)}**!`,
+                ephemeral: true
+            });
+        }
+
+        if (getBalance(i.user.id) < amount) {
+            return i.reply({ content: `❌ Bạn không đủ tiền! Số dư: ${formatMoneyFull(getBalance(i.user.id))}`, ephemeral: true });
+        }
+
+        if (bauCuaSession.userBets[i.user.id]) {
+            return i.reply({ content: '❌ Bạn đã đặt cược rồi!', ephemeral: true });
+        }
+
+        balances[i.user.id] -= amount;
+        bauCuaSession.userBets[i.user.id] = { linhVat: linhVat, amount: amount };
+        if (!bauCuaSession.bets[i.user.id]) bauCuaSession.bets[i.user.id] = {};
+        bauCuaSession.bets[i.user.id][linhVat] = (bauCuaSession.bets[i.user.id][linhVat] || 0) + amount;
+        bauCuaSession.totalBets[linhVat] = (bauCuaSession.totalBets[linhVat] || 0) + amount;
+        saveData();
+
+        await i.reply({ content: `✅ Đã đặt **${formatMoneyFull(amount)}** vào **${linhVat}**!`, ephemeral: true });
+
+        try {
+            await bauCuaSession.gameMessage.edit({
+                embeds: [bauCuaSession.getEmbed(false)],
+                components: bauCuaSession.getComponents(false)
+            });
+        } catch (e) {}
+        return;
+    }
+
     if (i.isButton()) {
         if (i.customId === 'btn_sodu') {
             const bal = getBalance(i.user.id);
@@ -810,6 +937,14 @@ client.on('interactionCreate', async (i) => {
                 return `Ván ${gameHistory.length - idx}: **${res.dice1}-${res.dice2}-${res.dice3}** (Tổng: **${res.total}** -> **${res.side === 'tai' ? '🔴 TÀI' : '🔵 XỈU'}**)`;
             }).join('\n');
             const historyEmbed = new EmbedBuilder().setColor(0x38bdf8).setTitle('📜 10 Ván Gần Nhất').setDescription(historyStr);
+            return i.reply({ embeds: [historyEmbed], ephemeral: true });
+        }
+        if (i.customId === 'btn_lichsu_bc') {
+            if (bauCuaHistory.length === 0) return i.reply({ content: '📜 Chưa có lịch sử ván Bầu Cua!', ephemeral: true });
+            let historyStr = bauCuaHistory.slice(-10).reverse().map((res, idx) => {
+                return `Ván ${bauCuaHistory.length - idx}: **${res.result.join(' - ')}**`;
+            }).join('\n');
+            const historyEmbed = new EmbedBuilder().setColor(0x8b5cf6).setTitle('📜 10 Ván Bầu Cua Gần Nhất').setDescription(historyStr);
             return i.reply({ embeds: [historyEmbed], ephemeral: true });
         }
         if (i.customId === 'btn_bxh') {
@@ -897,14 +1032,13 @@ async function startTaiXiuSession(channel, previousMsg = null) {
 }
 
 // ============================================================
-//  FINISH GAME - VỚI GIF HOẠT ĐỘNG
+//  FINISH GAME - TÀI XỈU
 // ============================================================
 async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
     try {
         totalGameCount++;
         const currentSessionId = totalGameCount;
 
-        // ===== GIF LẮC XÚC XẮC HOẠT ĐỘNG =====
         const rollingMsg = await channel.send('🎲 **ĐANG LẮC XÚC XẮC...**\nhttps://media.tenor.com/9yvCLdM4wLwAAAAC/dice-roll.gif');
         try { await gameMessage.delete(); } catch(e) {}
 
@@ -996,7 +1130,6 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                     let streak = userLoseStreaks[uid];
                     const lossAmount = betInfo.amount;
 
-                    // KHÔNG HỒI SINH 100M
                     if (balances[uid] < 5000) {
                         res += `💀 <@${uid}> đã hết tiền!\n`;
                         delete userBets[uid];
@@ -1051,6 +1184,177 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
 
                 if (!activeSessions[channel.id]) {
                     startTaiXiuSession(channel, null);
+                }
+            }, 5000);
+
+        }, 3000);
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+// ============================================================
+//  START BẦU CUA SESSION
+// ============================================================
+async function startBauCuaSession(channel, previousMsg = null) {
+    if (previousMsg) {
+        try { await previousMsg.delete(); } catch(e) {}
+    }
+
+    if (activeBauCuaSessions[channel.id]) {
+        if (activeBauCuaSessions[channel.id].timer) clearInterval(activeBauCuaSessions[channel.id].timer);
+    }
+
+    const sessionData = {
+        timeLeft: 45,
+        bets: {},
+        userBets: {},
+        totalBets: {},
+        getEmbed(isLocked = false) {
+            const totalBetAmount = Object.values(this.totalBets).reduce((a, b) => a + b, 0);
+            let fieldDesc = '';
+            for (const linhVat of LINH_VAT) {
+                const amount = this.totalBets[linhVat] || 0;
+                const emoji = LINH_VAT_EMOJI[linhVat] || '';
+                fieldDesc += `${emoji} **${linhVat}**: ${formatMoneyFull(amount)}\n`;
+            }
+            return new EmbedBuilder()
+                .setColor(isLocked ? 0xef4444 : 0x8b5cf6)
+                .setTitle('🎲 BẦU CUA KINGMC')
+                .setDescription(`⏱️ **Thời gian còn lại:** ${isLocked ? '🔒 Đã khóa cược!' : `${this.timeLeft}s`}\n\nChọn linh vật để đặt cược.\n\n💵 Giới hạn: **5k - 50m Gambling**\n💰 Tổng cược: **${formatMoneyFull(totalBetAmount)}**`)
+                .addFields({ name: '📊 Cược các cửa', value: fieldDesc || 'Chưa có cược nào', inline: false })
+                .setFooter({ text: 'Bầu Cua x1 - x2 - x3 • Giới hạn 50m/ván' })
+                .setTimestamp();
+        },
+        getComponents(isLocked = false) {
+            const rows = [];
+            for (let i = 0; i < 3; i++) {
+                const row = new ActionRowBuilder();
+                for (let j = 0; j < 2; j++) {
+                    const idx = i * 2 + j;
+                    if (idx >= LINH_VAT.length) break;
+                    const linhVat = LINH_VAT[idx];
+                    const emoji = LINH_VAT_EMOJI[linhVat] || '';
+                    row.addComponents(
+                        new ButtonBuilder()
+                            .setCustomId(`bet_bc_${linhVat}`)
+                            .setLabel(linhVat)
+                            .setEmoji(emoji)
+                            .setStyle(ButtonStyle.Secondary)
+                            .setDisabled(isLocked)
+                    );
+                }
+                rows.push(row);
+            }
+            rows.push(
+                new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId('btn_sodu').setLabel('Số Dư').setEmoji('📊').setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder().setCustomId('btn_lichsu_bc').setLabel('Lịch Sử BC').setEmoji('📈').setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder().setCustomId('btn_bxh').setLabel('BXH').setEmoji('🏆').setStyle(ButtonStyle.Success)
+                )
+            );
+            return rows;
+        }
+    };
+
+    for (const linhVat of LINH_VAT) {
+        sessionData.totalBets[linhVat] = 0;
+    }
+
+    activeBauCuaSessions[channel.id] = sessionData;
+    sessionData.gameMessage = await channel.send({ embeds: [sessionData.getEmbed()], components: sessionData.getComponents() });
+
+    const timer = setInterval(async () => {
+        if (!activeBauCuaSessions[channel.id] || activeBauCuaSessions[channel.id] !== sessionData) {
+            clearInterval(timer);
+            return;
+        }
+
+        sessionData.timeLeft--;
+        if (sessionData.timeLeft <= 0) {
+            clearInterval(timer);
+            delete activeBauCuaSessions[channel.id];
+            await finishBauCuaGame(channel, sessionData.gameMessage, sessionData.bets, sessionData.userBets, sessionData.totalBets);
+        } else {
+            try {
+                await sessionData.gameMessage.edit({
+                    embeds: [sessionData.getEmbed(sessionData.timeLeft <= 5)],
+                    components: sessionData.getComponents(sessionData.timeLeft <= 5)
+                });
+            } catch (e) {}
+        }
+    }, 1000);
+
+    sessionData.timer = timer;
+}
+
+// ============================================================
+//  FINISH BẦU CUA GAME
+// ============================================================
+async function finishBauCuaGame(channel, gameMessage, bets, userBets, totalBets) {
+    try {
+        totalGameCount++;
+        const currentSessionId = totalGameCount;
+
+        const rollingMsg = await channel.send('🎲 **ĐANG LẮC BẦU CUA...**\nhttps://media.tenor.com/9yvCLdM4wLwAAAAC/dice-roll.gif');
+        try { await gameMessage.delete(); } catch(e) {}
+
+        setTimeout(async () => {
+            const ketQua = throwBauCua();
+            const resultStr = ketQua.map(v => `${LINH_VAT_EMOJI[v] || ''} ${v}`).join(' | ');
+
+            let res = `🎲 **Kết quả:** ${resultStr}\n\n`;
+
+            for (const uid in userBets) {
+                const betInfo = userBets[uid];
+                const { linhVat, amount } = betInfo;
+                const dem = ketQua.filter(v => v === linhVat).length;
+                const userObj = await client.users.fetch(uid).catch(() => null);
+
+                if (dem > 0) {
+                    const tienThang = amount * dem;
+                    balances[uid] += tienThang;
+                    res += `🎉 <@${uid}> thắng **+${formatMoneyFull(tienThang)}** (x${dem}) - Số dư: ${formatMoneyFull(balances[uid])}\n`;
+
+                    if (userObj) {
+                        try {
+                            await userObj.send(`🎲 Bầu Cua #${currentSessionId}: ${resultStr}\n✅ Thắng **${formatMoneyFull(tienThang)}** (x${dem})\n💰 Số dư: **${formatMoneyFull(balances[uid])}**`);
+                        } catch (err) {}
+                    }
+                } else {
+                    res += `💀 <@${uid}> thua **-${formatMoneyFull(amount)}** - Số dư: ${formatMoneyFull(balances[uid])}\n`;
+
+                    if (userObj) {
+                        try {
+                            await userObj.send(`🎲 Bầu Cua #${currentSessionId}: ${resultStr}\n❌ Thua **${formatMoneyFull(amount)}**\n💰 Số dư: **${formatMoneyFull(balances[uid])}**`);
+                        } catch (err) {}
+                    }
+                }
+            }
+
+            bauCuaHistory.push({
+                id: currentSessionId,
+                result: ketQua,
+                totalBets: totalBets,
+                winnerCount: Object.keys(userBets).length
+            });
+            if (bauCuaHistory.length > 100) bauCuaHistory.shift();
+
+            const totalBetAmount = Object.values(totalBets).reduce((a, b) => a + b, 0);
+            const finalEmbed = new EmbedBuilder()
+                .setColor(0x8b5cf6)
+                .setTitle(`🏆 KẾT QUẢ BẦU CUA #${currentSessionId}`)
+                .setDescription(res + `\n📊 Tổng cược: ${formatMoneyFull(totalBetAmount)}\n🔄 **Tự động mở phiên tiếp theo sau 5 giây...**`)
+                .setTimestamp();
+
+            await rollingMsg.edit({ content: null, embeds: [finalEmbed] });
+
+            saveData();
+
+            setTimeout(() => {
+                try { rollingMsg.delete(); } catch(e) {}
+                if (!activeBauCuaSessions[channel.id]) {
+                    startBauCuaSession(channel, null);
                 }
             }, 5000);
 
