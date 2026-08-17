@@ -363,7 +363,8 @@ const ALLOWED_CHANNEL_ID = '1538197175731748894';
 const ALLOWED_BAUCUA_CHANNEL_ID = '1538508369306980372';
 const UNREGISTERED_ROLE_ID = '1538847435110088764';
 const REGISTERED_ROLE_ID = '1538894397725216779';
-const VERIFIED_CHANNEL_ID = '1538847435110088764'; // THAY ID KÊNH VERIFIED CỦA BẠN
+const VERIFIED_CHANNEL_ID = '1538847435110088764';
+const ADMIN_IDS = ['1291949040719630357', '1130441780479922176'];
 const PAY_BOT_NAME = 'giaanday2121';
 
 // ===== VARIABLES =====
@@ -438,12 +439,9 @@ function parseMoney(input, userId) {
 
 // ===== KIỂM TRA IGN MINECRAFT (HỖ TRỢ ACC CRACK) =====
 async function checkMinecraftIGN(ign) {
-    // Vì server dùng Minecraft Crack, bỏ qua kiểm tra Mojang API
-    // Chỉ cần IGN không rỗng và có độ dài hợp lệ
     if (!ign || ign.length < 2 || ign.length > 16) {
         return { exists: false };
     }
-    // Chấp nhận tất cả IGN hợp lệ
     console.log(`✅ IGN "${ign}" được chấp nhận (không kiểm tra vì acc crack)`);
     return { exists: true, uuid: `crack_${Date.now()}`, name: ign };
 }
@@ -511,7 +509,6 @@ setInterval(() => {
 // ============================================================
 client.on('guildMemberAdd', async (member) => {
     try {
-        // ===== GÁN ROLE "CHƯA ĐĂNG KÝ" =====
         const role = member.guild.roles.cache.get(UNREGISTERED_ROLE_ID);
         if (role) {
             await member.roles.add(role);
@@ -520,7 +517,6 @@ client.on('guildMemberAdd', async (member) => {
             console.log(`⚠️ Không tìm thấy role "Chưa đăng ký" (ID: ${UNREGISTERED_ROLE_ID})`);
         }
 
-        // ===== GỬI TIN NHẮN CHÀO MỪNG VÀO KÊNH VERIFIED =====
         const embed = new EmbedBuilder()
             .setColor(0xfacc15)
             .setTitle('👋 CHÀO MỪNG ĐẾN VỚI KINGMC!')
@@ -537,7 +533,6 @@ client.on('guildMemberAdd', async (member) => {
             console.log('⚠️ Không thể gửi tin nhắn vào kênh Verified:', err.message);
         }
 
-        // ===== GỬI DM CHÀO MỪNG =====
         try {
             await member.user.send(`👋 Chào mừng bạn đến với **KINGMC GAMBLING**!\n\n📌 Để bắt đầu, hãy đăng ký IGN bằng lệnh:\n\`!register <IGN>\`\n\n📝 Ví dụ: \`!register KingMC_Pro\`\n\n🔗 Sau khi đăng ký, bạn sẽ có thể truy cập tất cả kênh của server!`);
         } catch (err) {
@@ -574,7 +569,6 @@ client.on('messageCreate', async (message) => {
 
         const ign = args.slice(1).join(' ').trim();
         
-        // ===== KIỂM TRA IGN HỢP LỆ (CHO ACC CRACK) =====
         const result = await checkMinecraftIGN(ign);
         if (!result.exists) {
             return message.reply({ 
@@ -583,7 +577,6 @@ client.on('messageCreate', async (message) => {
             });
         }
 
-        // ===== KIỂM TRA IGN ĐÃ ĐƯỢC ĐĂNG KÝ CHƯA =====
         const existingUser = Object.keys(ignToDiscordMap).find(
             key => key.toLowerCase() === ign.toLowerCase()
         );
@@ -603,7 +596,6 @@ client.on('messageCreate', async (message) => {
             }
         }
 
-        // ===== KIỂM TRA DISCORD ID ĐÃ ĐĂNG KÝ IGN CHƯA =====
         const existingDiscord = Object.entries(ignToDiscordMap).find(
             ([key, value]) => value === message.author.id
         );
@@ -616,7 +608,6 @@ client.on('messageCreate', async (message) => {
             });
         }
 
-        // ===== XÓA TIN NHẮN !register CỦA NGƯỜI DÙNG =====
         try {
             await message.delete();
             console.log(`🗑️ Đã xóa tin nhắn !register của ${message.author.username}`);
@@ -624,32 +615,26 @@ client.on('messageCreate', async (message) => {
             console.log('⚠️ Không thể xóa tin nhắn:', err.message);
         }
 
-        // ===== LƯU IGN =====
         ignToDiscordMap[ign.toLowerCase()] = message.author.id;
         
-        // Khởi tạo balance nếu chưa có
         if (!balances[message.author.id]) {
             balances[message.author.id] = 100000000;
         }
 
-        // ===== CẬP NHẬT ROLE =====
         try {
             const member = await message.guild.members.fetch(message.author.id);
             
-            // Gỡ role "Chưa đăng ký"
             const unregisteredRole = message.guild.roles.cache.get(UNREGISTERED_ROLE_ID);
             if (unregisteredRole && member.roles.cache.has(unregisteredRole.id)) {
                 await member.roles.remove(unregisteredRole);
                 console.log(`✅ Đã gỡ role "Chưa đăng ký" cho ${message.author.username}`);
             }
             
-            // Gán role "Đã đăng ký"
             const registeredRole = message.guild.roles.cache.get(REGISTERED_ROLE_ID);
             if (registeredRole) {
                 await member.roles.add(registeredRole);
                 console.log(`✅ Đã gán role "Đã đăng ký" cho ${message.author.username}`);
             } else {
-                // Nếu chưa có role "Đã đăng ký", tạo mới
                 const newRole = await message.guild.roles.create({
                     name: 'Đã đăng ký',
                     color: '#22c55e',
@@ -664,26 +649,43 @@ client.on('messageCreate', async (message) => {
         
         saveData();
 
-        // ===== GỬI THÔNG BÁO =====
-        const embed = new EmbedBuilder()
-            .setColor(0x22c55e)
-            .setTitle('✅ ĐĂNG KÝ IGN THÀNH CÔNG!')
-            .setDescription(`🎮 **IGN:** \`${ign}\`\n👤 **Discord:** <@${message.author.id}>\n💰 **Số dư khởi tạo:** ${formatMoneyFull(balances[message.author.id])}\n\n✅ Bạn đã được cấp quyền truy cập tất cả kênh!`)
-            .setTimestamp()
-            .setFooter({ text: 'KingMC Gambling • Hệ thống nội bộ' });
-
-        await message.channel.send({ 
-            content: `<@${message.author.id}>`, 
-            embeds: [embed] 
-        });
-
-        // ===== THÔNG BÁO ADMIN =====
+        // ===== GỬI DM CHO NGƯỜI ĐĂNG KÝ =====
         try {
-            const adminChannel = await client.channels.fetch(ALLOWED_CHANNEL_ID);
-            if (adminChannel) {
-                await adminChannel.send(`📝 **${message.author.username}** đã đăng ký IGN: \`${ign}\` và được cấp quyền truy cập!`);
+            const user = await client.users.fetch(message.author.id);
+            if (user) {
+                const embed = new EmbedBuilder()
+                    .setColor(0x22c55e)
+                    .setTitle('✅ ĐĂNG KÝ IGN THÀNH CÔNG!')
+                    .setDescription(`🎮 **IGN:** \`${ign}\`\n💰 **Số dư khởi tạo:** ${formatMoneyFull(balances[message.author.id])}\n\n✅ Bạn đã được cấp quyền truy cập tất cả kênh!\n📌 Hãy vào các kênh gambling để chơi!`)
+                    .setTimestamp()
+                    .setFooter({ text: 'KingMC Gambling • Hệ thống nội bộ' });
+                
+                await user.send({ embeds: [embed] });
+                console.log(`✅ Đã gửi DM xác nhận cho ${message.author.username}`);
             }
-        } catch (err) {}
+        } catch (err) {
+            console.log(`⚠️ Không thể gửi DM cho ${message.author.username}:`, err.message);
+        }
+
+        // ===== GỬI DM CHO TẤT CẢ ADMIN =====
+        for (const adminId of ADMIN_IDS) {
+            try {
+                const admin = await client.users.fetch(adminId);
+                if (admin) {
+                    const adminEmbed = new EmbedBuilder()
+                        .setColor(0xfacc15)
+                        .setTitle('📝 CÓ NGƯỜI ĐĂNG KÝ MỚI!')
+                        .setDescription(`🎮 **IGN:** \`${ign}\`\n👤 **Discord:** <@${message.author.id}> (${message.author.username})\n🆔 **ID:** \`${message.author.id}\``)
+                        .setTimestamp()
+                        .setFooter({ text: 'KingMC Gambling • Admin Notification' });
+                    
+                    await admin.send({ embeds: [adminEmbed] });
+                    console.log(`✅ Đã gửi DM thông báo cho Admin ${adminId}`);
+                }
+            } catch (err) {
+                console.log(`⚠️ Không thể gửi DM cho Admin ${adminId}:`, err.message);
+            }
+        }
 
         return;
     }
@@ -698,7 +700,6 @@ client.on('messageCreate', async (message) => {
             });
         }
 
-        // Kiểm tra người dùng đã đăng ký chưa
         const currentIgn = Object.entries(ignToDiscordMap).find(
             ([key, value]) => value === message.author.id
         );
@@ -712,7 +713,6 @@ client.on('messageCreate', async (message) => {
 
         const newIgn = args.slice(1).join(' ').trim();
         
-        // ===== KIỂM TRA IGN MỚI HỢP LỆ =====
         const result = await checkMinecraftIGN(newIgn);
         if (!result.exists) {
             return message.reply({ 
@@ -721,7 +721,6 @@ client.on('messageCreate', async (message) => {
             });
         }
 
-        // ===== KIỂM TRA IGN MỚI ĐÃ ĐƯỢC ĐĂNG KÝ CHƯA =====
         const existingUser = Object.keys(ignToDiscordMap).find(
             key => key.toLowerCase() === newIgn.toLowerCase()
         );
@@ -733,7 +732,6 @@ client.on('messageCreate', async (message) => {
             });
         }
 
-        // ===== CẬP NHẬT IGN MỚI =====
         delete ignToDiscordMap[currentIgn[0].toLowerCase()];
         ignToDiscordMap[newIgn.toLowerCase()] = message.author.id;
         saveData();
@@ -1698,287 +1696,3 @@ async function finishBauCuaGame(channel, gameMessage, bets, userBets, totalBets)
 //  START BOT
 // ============================================================
 client.login(BOT_TOKEN);
-// ============================================================
-//  TÍNH NĂNG MỚI - WEB PANEL API
-// ============================================================
-
-// ===== 1. THÔNG BÁO ĐẨY (DM) =====
-app.post('/api/announce/dm', async (req, res) => {
-    const { userId, message, password } = req.body;
-    if (password !== 'Z0N6Hz9UzGX') return res.status(403).json({ error: 'Sai mật khẩu!' });
-    if (!message) return res.status(400).json({ error: 'Thiếu nội dung!' });
-    
-    try {
-        if (userId) {
-            // Gửi cho 1 người
-            const user = await client.users.fetch(userId);
-            if (user) {
-                await user.send(`📢 **THÔNG BÁO TỪ ADMIN**\n\n${message}`);
-                res.json({ success: true, message: 'Đã gửi thông báo cho 1 người!' });
-            } else {
-                res.status(404).json({ error: 'Không tìm thấy người chơi!' });
-            }
-        } else {
-            // Gửi cho tất cả
-            let sent = 0;
-            const allUsers = Object.keys(balances);
-            for (const uid of allUsers) {
-                try {
-                    const user = await client.users.fetch(uid);
-                    if (user) {
-                        await user.send(`📢 **THÔNG BÁO TỪ ADMIN**\n\n${message}`);
-                        sent++;
-                    }
-                } catch (e) {}
-                // Tránh rate limit
-                await new Promise(r => setTimeout(r, 100));
-            }
-            res.json({ success: true, message: `Đã gửi thông báo cho ${sent} người chơi!` });
-        }
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
-});
-
-// ===== 2. THỐNG KÊ CHI TIẾT THEO NGƯỜI CHƠI =====
-app.get('/api/player/stats/:userId', (req, res) => {
-    const { userId } = req.params;
-    const userHistory = gameHistory.filter(g => g.userId === userId);
-    const wins = userHistory.filter(g => g.side === g.winSide).length;
-    const losses = userHistory.length - wins;
-    const totalBet = userHistory.reduce((sum, g) => sum + (g.totalBet || 0), 0);
-    const totalWin = userHistory.filter(g => g.side === g.winSide).reduce((sum, g) => sum + (g.totalBet || 0), 0);
-    const totalLose = userHistory.filter(g => g.side !== g.winSide).reduce((sum, g) => sum + (g.totalBet || 0), 0);
-    
-    res.json({
-        userId,
-        totalGames: userHistory.length,
-        wins,
-        losses,
-        winRate: userHistory.length > 0 ? Math.round((wins / userHistory.length) * 100) : 0,
-        totalBet,
-        totalWin,
-        totalLose,
-        profit: totalWin - totalLose,
-        balance: balances[userId] || 0,
-        history: userHistory.slice(-20).reverse()
-    });
-});
-
-// ===== 3. LỊCH SỬ GIAO DỊCH CHI TIẾT =====
-app.get('/api/transactions', (req, res) => {
-    const { userId, limit = 50, type } = req.query;
-    let transactions = [];
-    
-    // Gom tất cả giao dịch
-    const deposits = depositHistory.map(d => ({ ...d, type: 'nạp' }));
-    const transfers = transferHistory.map(t => ({ ...t, type: 'chuyển' }));
-    const withdrawals = pendingWithdrawals.filter(w => w.status === 'approved').map(w => ({ ...w, type: 'rút' }));
-    
-    transactions = [...deposits, ...transfers, ...withdrawals];
-    
-    // Lọc theo userId
-    if (userId) {
-        transactions = transactions.filter(t => t.userId === userId || t.to === userId);
-    }
-    // Lọc theo type
-    if (type) {
-        transactions = transactions.filter(t => t.type === type);
-    }
-    
-    transactions.sort((a, b) => new Date(b.time || b.createdAt) - new Date(a.time || a.createdAt));
-    res.json(transactions.slice(0, parseInt(limit)));
-});
-
-// ===== 4. CẢNH BÁO CHUỖI THUA =====
-app.get('/api/alerts/lose-streak', (req, res) => {
-    const alerts = [];
-    for (const [uid, streak] of Object.entries(userLoseStreaks)) {
-        if (streak >= 7) {
-            alerts.push({
-                userId: uid,
-                streak: streak,
-                balance: balances[uid] || 0,
-                level: streak >= 10 ? 'critical' : streak >= 8 ? 'high' : 'warning'
-            });
-        }
-    }
-    alerts.sort((a, b) => b.streak - a.streak);
-    res.json(alerts);
-});
-
-// ===== 5. BXH MỞ RỘNG =====
-app.get('/api/leaderboard', (req, res) => {
-    const { type = 'balance', limit = 10 } = req.query;
-    let sorted = [];
-    
-    if (type === 'balance') {
-        sorted = Object.entries(balances).sort((a, b) => b[1] - a[1]);
-    } else if (type === 'wins') {
-        sorted = Object.entries(userWins).sort((a, b) => b[1] - a[1]);
-    } else if (type === 'winrate') {
-        const stats = {};
-        const allUsers = new Set([...Object.keys(userWins), ...Object.keys(userLosses)]);
-        for (const uid of allUsers) {
-            const wins = userWins[uid] || 0;
-            const losses = userLosses[uid] || 0;
-            const total = wins + losses;
-            stats[uid] = { wins, losses, winRate: total > 0 ? Math.round((wins / total) * 100) : 0 };
-        }
-        sorted = Object.entries(stats).sort((a, b) => b[1].winRate - a[1].winRate);
-    } else if (type === 'games') {
-        const games = {};
-        gameHistory.forEach(g => {
-            if (g.userId) games[g.userId] = (games[g.userId] || 0) + 1;
-        });
-        sorted = Object.entries(games).sort((a, b) => b[1] - a[1]);
-    }
-    
-    const result = sorted.slice(0, parseInt(limit)).map(([uid, value]) => {
-        let username = 'Unknown';
-        try {
-            const user = client.users.fetch(uid).catch(() => null);
-            if (user) username = user.username;
-        } catch (e) {}
-        return { userId: uid, username, value, display: typeof value === 'object' ? value : { value } };
-    });
-    res.json(result);
-});
-
-// ===== 6. BLACKLIST =====
-let blacklist = {};
-
-app.get('/api/blacklist', (req, res) => {
-    res.json(blacklist);
-});
-
-app.post('/api/blacklist/add', (req, res) => {
-    const { userId, reason, password } = req.body;
-    if (password !== 'Z0N6Hz9UzGX') return res.status(403).json({ error: 'Sai mật khẩu!' });
-    if (!userId) return res.status(400).json({ error: 'Thiếu userId!' });
-    
-    blacklist[userId] = {
-        reason: reason || 'Không có lý do',
-        time: new Date().toISOString(),
-        admin: 'Admin'
-    };
-    saveData();
-    res.json({ success: true, blacklist });
-});
-
-app.post('/api/blacklist/remove', (req, res) => {
-    const { userId, password } = req.body;
-    if (password !== 'Z0N6Hz9UzGX') return res.status(403).json({ error: 'Sai mật khẩu!' });
-    if (!userId) return res.status(400).json({ error: 'Thiếu userId!' });
-    
-    delete blacklist[userId];
-    saveData();
-    res.json({ success: true, blacklist });
-});
-
-// ===== 7. EXPORT CSV =====
-app.get('/api/export/csv', (req, res) => {
-    const { type } = req.query;
-    let headers = [];
-    let rows = [];
-    
-    if (type === 'players') {
-        headers = ['Discord ID', 'Username', 'IGN', 'Số dư', 'Chuỗi thua'];
-        const sorted = Object.entries(balances).sort((a, b) => b[1] - a[1]);
-        rows = sorted.map(([id, bal]) => {
-            let username = 'Unknown', ign = 'Chưa liên kết';
-            for (const [ignKey, discordId] of Object.entries(ignToDiscordMap)) {
-                if (discordId === id) { ign = ignKey; break; }
-            }
-            return [id, username, ign, bal, userLoseStreaks[id] || 0];
-        });
-    } else if (type === 'history') {
-        headers = ['Phiên', 'Xúc xắc', 'Tổng', 'Cửa thắng'];
-        rows = gameHistory.slice(-100).map(h => [
-            h.id || 'N/A',
-            `${h.dice1}-${h.dice2}-${h.dice3}`,
-            h.total,
-            h.side === 'tai' ? 'TÀI' : 'XỈU'
-        ]);
-    } else {
-        return res.status(400).json({ error: 'Type không hợp lệ!' });
-    }
-    
-    let csv = headers.join(',') + '\n';
-    rows.forEach(row => {
-        csv += row.join(',') + '\n';
-    });
-    
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename=${type}_${Date.now()}.csv`);
-    res.send(csv);
-});
-
-// ===== 8. GHI CHÚ NÂNG CAO =====
-// Đã có playerNotes, thêm phân loại
-let playerNotesPublic = {};
-let playerNotesPrivate = {};
-
-app.post('/api/player/note/advanced', (req, res) => {
-    const { userId, note, type, password } = req.body;
-    if (password !== 'Z0N6Hz9UzGX') return res.status(403).json({ error: 'Sai mật khẩu!' });
-    if (!userId) return res.status(400).json({ error: 'Thiếu userId!' });
-    
-    if (type === 'public') {
-        playerNotesPublic[userId] = { note, time: new Date().toISOString() };
-    } else {
-        playerNotesPrivate[userId] = { note, time: new Date().toISOString() };
-    }
-    saveData();
-    res.json({ success: true });
-});
-
-app.get('/api/player/note/advanced/:userId', (req, res) => {
-    const { userId } = req.params;
-    res.json({
-        public: playerNotesPublic[userId] || null,
-        private: playerNotesPrivate[userId] || null
-    });
-});
-
-// ===== 9. THÊM/TRỪ TIỀN NGƯỜI CHƠI =====
-app.post('/api/player/adjust-balance', (req, res) => {
-    const { userId, amount, note, password } = req.body;
-    if (password !== 'Z0N6Hz9UzGX') return res.status(403).json({ error: 'Sai mật khẩu!' });
-    if (!userId) return res.status(400).json({ error: 'Thiếu userId!' });
-    const numAmount = parseInt(amount);
-    if (isNaN(numAmount) || numAmount === 0) return res.status(400).json({ error: 'Số tiền không hợp lệ!' });
-    
-    balances[userId] = (balances[userId] || 100000000) + numAmount;
-    if (balances[userId] < 0) balances[userId] = 0;
-    
-    transferHistory.push({
-        to: userId,
-        amount: numAmount,
-        note: note || (numAmount > 0 ? 'Admin cộng' : 'Admin trừ'),
-        time: new Date().toISOString(),
-        from: 'Admin'
-    });
-    saveData();
-    
-    res.json({ 
-        success: true, 
-        newBalance: balances[userId],
-        formatted: formatMoneyFull(balances[userId])
-    });
-});
-
-// ===== CẬP NHẬT LOADDATA VÀ SAVEDATA =====
-// THÊM VÀO loadData():
-/*
-blacklist: {},
-playerNotesPublic: {},
-playerNotesPrivate: {}
-*/
-
-// THÊM VÀO saveData():
-/*
-blacklist: blacklist,
-playerNotesPublic: playerNotesPublic,
-playerNotesPrivate: playerNotesPrivate
-*/
