@@ -1,1 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Bot Panel - KingMC</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: #1e293b; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h2 { color: #38bdf8; text-align: center; }
+        .form-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; }
+        button { padding: 10px 20px; border: none; border-radius: 6px; background: #22c55e; color: white; cursor: pointer; font-weight: bold; }
+        button:hover { background: #16a34a; }
+        .account-card { background: #334155; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .log-box { background: #090d16; padding: 15px; border-radius: 8px; height: 250px; overflow-y: auto; font-family: monospace; font-size: 13px; color: #4ade80; border: 1px solid #334155; }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-start { background: #3b82f6; }
+        .btn-start:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🎮 PANEL QUẢN LÝ BOT MINECRAFT</h2>
+        
+        <div class="form-group">
+            <input type="text" id="username" placeholder="Tên tài khoản Minecraft (Username)">
+            <input type="password" id="password" placeholder="Mật khẩu (hoặc bỏ trống)">
+            <button onclick="addAccount()">Thêm Bot</button>
+        </div>
 
+        <h3>Danh sách tài khoản</h3>
+        <div id="account-list">Đang tải danh sách...</div>
+
+        <h3>Bảng Nhật Ký (Logs)</h3>
+        <div class="log-box" id="log-box"></div>
+    </div>
+
+    <script>
+        const socket = io();
+
+        function addAccount() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            if (!username) return alert('Vui lòng nhập tên tài khoản!');
+            socket.emit('add_account', { username, password });
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        function startBot(id) { socket.emit('start_bot', id); }
+        function stopBot(id) { socket.emit('stop_bot', id); }
+        function deleteAccount(id) { socket.emit('delete_account', id); }
+
+        socket.on('init_accounts', (accounts) => {
+            const listDiv = document.getElementById('account-list');
+            if (accounts.length === 0) {
+                listDiv.innerHTML = '<p style="color: #94a3b8;">Chưa có tài khoản nào được thêm.</p>';
+                return;
+            }
+            listDiv.innerHTML = accounts.map(acc => `
+                <div class="account-card">
+                    <div>
+                        <strong>${acc.username}</strong><br>
+                        <small>Trạng thái: <span style="color: ${acc.color};">${acc.status}</span></small>
+                    </div>
+                    <div>
+                        <button class="btn-start" onclick="startBot('${acc.id}')">Chạy</button>
+                        <button class="btn-danger" onclick="stopBot('${acc.id}')">Dừng</button>
+                        <button class="btn-danger" style="background:#64748b;" onclick="deleteAccount('${acc.id}')">Xóa</button>
+                    </div>
+                </div>
+            `).join('');
+        });
+
+        socket.on('log', (msg) => {
+            const logBox = document.getElementById('log-box');
+            logBox.innerHTML += `<div>${msg}</div>`;
+            logBox.scrollTop = logBox.scrollHeight;
+        });
+    </script>
+</body>
+</html>
