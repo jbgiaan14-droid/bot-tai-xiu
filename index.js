@@ -62,7 +62,8 @@ function loadData() {
         gaiRate: 85,
         autoTransfer: { enabled: false, interval: 0, amount: 1000000, userId: null, lastRun: null },
         pendingWithdrawals: [],
-        lossHistory: []
+        lossHistory: [],
+        ignToDiscordMap: {}
     };
 }
 
@@ -78,7 +79,8 @@ function saveData() {
             gaiRate: GAI_RATE,
             autoTransfer: autoTransfer,
             pendingWithdrawals: pendingWithdrawals,
-            lossHistory: lossHistory.slice(-100)
+            lossHistory: lossHistory.slice(-100),
+            ignToDiscordMap: ignToDiscordMap
         }, null, 2));
     } catch (e) {}
 }
@@ -200,6 +202,7 @@ app.post('/api/reset-all', (req, res) => {
     transferHistory = [];
     pendingWithdrawals = [];
     lossHistory = [];
+    ignToDiscordMap = {};
     saveData();
     res.json({ success: true });
 });
@@ -350,13 +353,17 @@ const client = new Client({
         GatewayIntentBits.Guilds, 
         GatewayIntentBits.GuildMessages, 
         GatewayIntentBits.MessageContent, 
-        GatewayIntentBits.DirectMessages
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.GuildMembers
     ] 
 });
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const ALLOWED_CHANNEL_ID = '1538197175731748894';
 const ALLOWED_BAUCUA_CHANNEL_ID = '1538508369306980372';
+const UNREGISTERED_ROLE_ID = '1538847435110088764';
+const REGISTERED_ROLE_ID = '1538894397725216779';
+const VERIFIED_CHANNEL_ID = '1538847435110088764'; // THAY ID KÊNH VERIFIED CỦA BẠN
 const PAY_BOT_NAME = 'giaanday2121';
 
 // ===== VARIABLES =====
@@ -388,8 +395,8 @@ const LINH_VAT_EMOJI = {
 
 // ===== ID KHÔNG GIỚI HẠN CƯỢC =====
 const UNLIMITED_IDS = ['1291949040719630357', '1130441780479922176'];
-const MAX_BET = 50000000; // 50 triệu cho Tài Xỉu
-const MAX_BAUCUA_BET = 20000000; // 20 triệu cho Bầu Cua
+const MAX_BET = 50000000;
+const MAX_BAUCUA_BET = 20000000;
 
 // Load
 const saved = loadData();
@@ -403,6 +410,7 @@ GAI_RATE = saved.gaiRate || 85;
 autoTransfer = saved.autoTransfer || { enabled: false, interval: 0, amount: 1000000, userId: null, lastRun: null };
 pendingWithdrawals = saved.pendingWithdrawals || [];
 lossHistory = saved.lossHistory || [];
+ignToDiscordMap = saved.ignToDiscordMap || {};
 
 function getBalance(userId) { 
     if (!balances[userId]) balances[userId] = 100000000;
@@ -426,6 +434,21 @@ function parseMoney(input, userId) {
     else if (str.endsWith('b')) { multiplier = 1_000_000_000; str = str.slice(0, -1); }
     let num = parseFloat(str);
     return isNaN(num) ? NaN : Math.floor(num * multiplier);
+}
+
+// ===== KIỂM TRA IGN MINECRAFT =====
+async function checkMinecraftIGN(ign) {
+    try {
+        const response = await fetch(`https://api.mojang.com/users/profiles/minecraft/${ign}`);
+        if (response.ok) {
+            const data = await response.json();
+            return { exists: true, uuid: data.id, name: data.name };
+        }
+        return { exists: false };
+    } catch (e) {
+        console.log('⚠️ Lỗi kiểm tra IGN:', e.message);
+        return { exists: false };
+    }
 }
 
 // ===== BẦU CUA FUNCTIONS =====
@@ -487,17 +510,343 @@ setInterval(() => {
 }, 60000);
 
 // ============================================================
+//  SỰ KIỆN THÀNH VIÊN MỚI VÀO SERVER
+// ============================================================
+client.on('guildMemberAdd', async (member) => {
+    try {
+        // ===== GÁN ROLE "CHƯA ĐĂNG KÝ" =====
+        const role = member.guild.roles.cache.get(UNREGISTERED_ROLE_ID);
+        if (role) {
+            await member.roles.add(role);
+            console.log(`✅ Đã gán role "Chưa đăng ký" cho ${member.user.username}`);
+        } else {
+            console.log(`⚠️ Không tìm thấy role "Chưa đăng ký" (ID: ${UNREGISTERED_ROLE_ID})`);
+        }
+
+        // ===== GỬI TIN NHẮN CHÀO MỪNG VÀO KÊNH VERIFIED =====
+        const embed = new EmbedBuilder()
+            .setColor(0xfacc15)
+            .setTitle('👋 CHÀO MỪNG ĐẾN VỚI KINGMC!')
+            .setDescription(`Chào mừng <@${member.user.id}> đến với **KINGMC GAMBLING**! 🎉\n\n📌 **Để bắt đầu, bạn cần:**\n1️⃣ Đăng ký IGN trong Minecraft bằng lệnh \`!register <IGN>\`\n2️⃣ Sau khi đăng ký, bạn sẽ được gán role **"Đã đăng ký"** và có thể truy cập tất cả kênh.\n\n📝 Vui lòng đọc kỹ hướng dẫn tại đây!`)
+            .setTimestamp()
+            .setFooter({ text: 'KingMC Gambling • Hệ thống nội bộ' });
+
+        try {
+            const channel = await member.guild.channels.fetch(VERIFIED_CHANNEL_ID);
+            if (channel) {
+                await channel.send({ content: `<@${member.user.id}>`, embeds: [embed] });
+            }
+        } catch (err) {
+            console.log('⚠️ Không thể gửi tin nhắn vào kênh Verified:', err.message);
+        }
+
+        // ===== GỬI DM CHÀO MỪNG =====
+        try {
+            await member.user.send(`👋 Chào mừng bạn đến với **KINGMC GAMBLING**!\n\n📌 Để bắt đầu, hãy đăng ký IGN bằng lệnh:\n\`!register <IGN>\`\n\n📝 Ví dụ: \`!register KingMC_Pro\`\n\n🔗 Sau khi đăng ký, bạn sẽ có thể truy cập tất cả kênh của server!`);
+        } catch (err) {
+            console.log(`⚠️ Không thể gửi DM cho ${member.user.username}`);
+        }
+
+    } catch (err) {
+        console.log('❌ Lỗi xử lý thành viên mới:', err.message);
+    }
+});
+
+// ============================================================
 //  DISCORD BOT - MESSAGECREATE
 // ============================================================
 client.once('ready', () => {
     console.log(`🤖 Bot ${client.user.tag} đã sẵn sàng!`);
     console.log(`📊 ${Object.keys(balances).length} người chơi`);
+    console.log(`📝 ${Object.keys(ignToDiscordMap).length} IGN đã đăng ký`);
 });
 
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
     const content = message.content.toLowerCase();
 
+    // ===== LỆNH ĐĂNG KÝ IGN =====
+    if (content === '!register' || content.startsWith('!register ')) {
+        const args = content.split(' ');
+        if (args.length < 2) {
+            return message.reply({ 
+                content: '❌ Vui lòng nhập IGN của bạn!\n📝 Cú pháp: `!register <IGN>`\n📌 Ví dụ: `!register KingMC_Pro`', 
+                ephemeral: true 
+            });
+        }
+
+        const ign = args.slice(1).join(' ').trim();
+        
+        // ===== KIỂM TRA IGN CÓ TỒN TẠI TRONG MINECRAFT KHÔNG =====
+        const result = await checkMinecraftIGN(ign);
+        if (!result.exists) {
+            return message.reply({ 
+                content: `❌ IGN **${ign}** không tồn tại trong Minecraft!\n📌 Vui lòng kiểm tra lại chính tả.`, 
+                ephemeral: true 
+            });
+        }
+
+        // ===== KIỂM TRA IGN ĐÃ ĐƯỢC ĐĂNG KÝ CHƯA =====
+        const existingUser = Object.keys(ignToDiscordMap).find(
+            key => key.toLowerCase() === ign.toLowerCase()
+        );
+        
+        if (existingUser) {
+            const existingDiscordId = ignToDiscordMap[existingUser];
+            if (existingDiscordId === message.author.id) {
+                return message.reply({ 
+                    content: `✅ IGN **${ign}** đã được đăng ký cho bạn rồi!`, 
+                    ephemeral: true 
+                });
+            } else {
+                return message.reply({ 
+                    content: `❌ IGN **${ign}** đã được đăng ký bởi người chơi khác!\n📌 Vui lòng sử dụng IGN khác.`, 
+                    ephemeral: true 
+                });
+            }
+        }
+
+        // ===== KIỂM TRA DISCORD ID ĐÃ ĐĂNG KÝ IGN CHƯA =====
+        const existingDiscord = Object.entries(ignToDiscordMap).find(
+            ([key, value]) => value === message.author.id
+        );
+
+        if (existingDiscord) {
+            const oldIgn = existingDiscord[0];
+            return message.reply({ 
+                content: `❌ Bạn đã đăng ký IGN **${oldIgn}** rồi!\n📌 Để đổi IGN, hãy dùng lệnh: \`!changeign <IGN mới>\``, 
+                ephemeral: true 
+            });
+        }
+
+        // ===== XÓA TIN NHẮN !register CỦA NGƯỜI DÙNG =====
+        try {
+            await message.delete();
+            console.log(`🗑️ Đã xóa tin nhắn !register của ${message.author.username}`);
+        } catch (err) {
+            console.log('⚠️ Không thể xóa tin nhắn:', err.message);
+        }
+
+        // ===== LƯU IGN =====
+        ignToDiscordMap[ign.toLowerCase()] = message.author.id;
+        
+        // Khởi tạo balance nếu chưa có
+        if (!balances[message.author.id]) {
+            balances[message.author.id] = 100000000;
+        }
+
+        // ===== CẬP NHẬT ROLE =====
+        try {
+            const member = await message.guild.members.fetch(message.author.id);
+            
+            // Gỡ role "Chưa đăng ký"
+            const unregisteredRole = message.guild.roles.cache.get(UNREGISTERED_ROLE_ID);
+            if (unregisteredRole && member.roles.cache.has(unregisteredRole.id)) {
+                await member.roles.remove(unregisteredRole);
+                console.log(`✅ Đã gỡ role "Chưa đăng ký" cho ${message.author.username}`);
+            }
+            
+            // Gán role "Đã đăng ký"
+            const registeredRole = message.guild.roles.cache.get(REGISTERED_ROLE_ID);
+            if (registeredRole) {
+                await member.roles.add(registeredRole);
+                console.log(`✅ Đã gán role "Đã đăng ký" cho ${message.author.username}`);
+            } else {
+                // Nếu chưa có role "Đã đăng ký", tạo mới
+                const newRole = await message.guild.roles.create({
+                    name: 'Đã đăng ký',
+                    color: '#22c55e',
+                    reason: 'Tự động tạo role cho người đã đăng ký IGN'
+                });
+                await member.roles.add(newRole);
+                console.log('✅ Đã tạo role "Đã đăng ký"');
+            }
+        } catch (err) {
+            console.log('⚠️ Lỗi cập nhật role:', err.message);
+        }
+        
+        saveData();
+
+        // ===== GỬI THÔNG BÁO =====
+        const embed = new EmbedBuilder()
+            .setColor(0x22c55e)
+            .setTitle('✅ ĐĂNG KÝ IGN THÀNH CÔNG!')
+            .setDescription(`🎮 **IGN:** \`${ign}\`\n👤 **Discord:** <@${message.author.id}>\n💰 **Số dư khởi tạo:** ${formatMoneyFull(balances[message.author.id])}\n\n✅ Bạn đã được cấp quyền truy cập tất cả kênh!`)
+            .setTimestamp()
+            .setFooter({ text: 'KingMC Gambling • Hệ thống nội bộ' });
+
+        await message.channel.send({ 
+            content: `<@${message.author.id}>`, 
+            embeds: [embed] 
+        });
+
+        // ===== THÔNG BÁO ADMIN =====
+        try {
+            const adminChannel = await client.channels.fetch(ALLOWED_CHANNEL_ID);
+            if (adminChannel) {
+                await adminChannel.send(`📝 **${message.author.username}** đã đăng ký IGN: \`${ign}\` và được cấp quyền truy cập!`);
+            }
+        } catch (err) {}
+
+        return;
+    }
+
+    // ===== LỆNH ĐỔI IGN =====
+    if (content === '!changeign' || content.startsWith('!changeign ')) {
+        const args = content.split(' ');
+        if (args.length < 2) {
+            return message.reply({ 
+                content: '❌ Vui lòng nhập IGN mới!\n📝 Cú pháp: `!changeign <IGN mới>`', 
+                ephemeral: true 
+            });
+        }
+
+        // Kiểm tra người dùng đã đăng ký chưa
+        const currentIgn = Object.entries(ignToDiscordMap).find(
+            ([key, value]) => value === message.author.id
+        );
+
+        if (!currentIgn) {
+            return message.reply({ 
+                content: '❌ Bạn chưa đăng ký IGN!\n📌 Dùng lệnh: `!register <IGN>` trước.', 
+                ephemeral: true 
+            });
+        }
+
+        const newIgn = args.slice(1).join(' ').trim();
+        
+        // ===== KIỂM TRA IGN MỚI CÓ TỒN TẠI KHÔNG =====
+        const result = await checkMinecraftIGN(newIgn);
+        if (!result.exists) {
+            return message.reply({ 
+                content: `❌ IGN **${newIgn}** không tồn tại trong Minecraft!\n📌 Vui lòng kiểm tra lại chính tả.`, 
+                ephemeral: true 
+            });
+        }
+
+        // ===== KIỂM TRA IGN MỚI ĐÃ ĐƯỢC ĐĂNG KÝ CHƯA =====
+        const existingUser = Object.keys(ignToDiscordMap).find(
+            key => key.toLowerCase() === newIgn.toLowerCase()
+        );
+        
+        if (existingUser && ignToDiscordMap[existingUser] !== message.author.id) {
+            return message.reply({ 
+                content: `❌ IGN **${newIgn}** đã được đăng ký bởi người chơi khác!`, 
+                ephemeral: true 
+            });
+        }
+
+        // ===== CẬP NHẬT IGN MỚI =====
+        delete ignToDiscordMap[currentIgn[0].toLowerCase()];
+        ignToDiscordMap[newIgn.toLowerCase()] = message.author.id;
+        saveData();
+
+        await message.reply({ 
+            content: `✅ Đã đổi IGN từ **${currentIgn[0]}** thành **${newIgn}** thành công!`, 
+            ephemeral: true 
+        });
+
+        return;
+    }
+
+    // ===== LỆNH XEM PROFILE =====
+    if (content === '!profile' || content === '!info') {
+        const userIgn = Object.entries(ignToDiscordMap).find(
+            ([key, value]) => value === message.author.id
+        );
+
+        const bal = getBalance(message.author.id);
+        
+        const embed = new EmbedBuilder()
+            .setColor(0x38bdf8)
+            .setTitle('👤 THÔNG TIN CÁ NHÂN')
+            .addFields(
+                { name: '🎮 IGN', value: userIgn ? `\`${userIgn[0]}\`` : '❌ Chưa đăng ký', inline: true },
+                { name: '💰 Số dư', value: formatMoneyFull(bal), inline: true },
+                { name: '👤 Discord', value: `<@${message.author.id}>`, inline: true }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'KingMC Gambling • Hệ thống nội bộ' });
+
+        await message.reply({ embeds: [embed], ephemeral: true });
+        return;
+    }
+
+    // ===== LỆNH XEM DANH SÁCH ĐĂNG KÝ (ADMIN) =====
+    if (content === '!listign') {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return message.reply({ content: '❌ Chỉ Admin mới dùng được lệnh này!', ephemeral: true });
+        }
+
+        if (Object.keys(ignToDiscordMap).length === 0) {
+            return message.reply({ content: '📝 Chưa có ai đăng ký IGN!', ephemeral: true });
+        }
+
+        let list = '📝 **DANH SÁCH ĐĂNG KÝ IGN**\n\n';
+        for (const [ign, discordId] of Object.entries(ignToDiscordMap)) {
+            try {
+                const user = await client.users.fetch(discordId);
+                list += `🎮 ${ign} → <@${discordId}> (${user.username})\n`;
+            } catch {
+                list += `🎮 ${ign} → <@${discordId}> (Unknown)\n`;
+            }
+        }
+
+        if (list.length > 2000) {
+            const buffer = Buffer.from(list, 'utf-8');
+            await message.reply({ 
+                content: '📝 Danh sách quá dài, xem file đính kèm:',
+                files: [{ attachment: buffer, name: 'listign.txt' }]
+            });
+        } else {
+            await message.reply({ content: list, ephemeral: true });
+        }
+        return;
+    }
+
+    // ===== LỆNH XEM DANH SÁCH CHƯA ĐĂNG KÝ (ADMIN) =====
+    if (content === '!listunregistered') {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return message.reply({ content: '❌ Chỉ Admin mới dùng được lệnh này!', ephemeral: true });
+        }
+
+        try {
+            const guild = message.guild;
+            const unregisteredRole = guild.roles.cache.get(UNREGISTERED_ROLE_ID);
+            
+            if (!unregisteredRole) {
+                return message.reply({ content: '❌ Không tìm thấy role "Chưa đăng ký"!', ephemeral: true });
+            }
+
+            const members = await guild.members.fetch();
+            const unregisteredMembers = members.filter(m => m.roles.cache.has(unregisteredRole.id));
+
+            if (unregisteredMembers.size === 0) {
+                return message.reply({ content: '✅ Tất cả thành viên đã đăng ký!', ephemeral: true });
+            }
+
+            let list = `📝 **DANH SÁCH CHƯA ĐĂNG KÝ (${unregisteredMembers.size} người)**\n\n`;
+            unregisteredMembers.forEach(m => {
+                list += `👤 ${m.user.username} (${m.user.id})\n`;
+            });
+
+            if (list.length > 2000) {
+                const buffer = Buffer.from(list, 'utf-8');
+                await message.reply({ 
+                    content: '📝 Danh sách quá dài, xem file đính kèm:',
+                    files: [{ attachment: buffer, name: 'listunregistered.txt' }]
+                });
+            } else {
+                await message.reply({ content: list, ephemeral: true });
+            }
+        } catch (err) {
+            console.log('❌ Lỗi listunregistered:', err.message);
+            await message.reply({ content: '❌ Đã xảy ra lỗi!', ephemeral: true });
+        }
+        return;
+    }
+
+    // ===== LỆNH SETUPBANK =====
     if (content === '!setupbank') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return message.reply({ content: '❌ Chỉ có Quản trị viên mới dùng được lệnh này!', ephemeral: true });
@@ -524,7 +873,7 @@ client.on('messageCreate', async (message) => {
         return message.channel.send({ embeds: [embed], components: [row1, row2] });
     }
 
-    // ===== TÀI XỈU - KÊNH 1538197175731748894 =====
+    // ===== TÀI XỈU =====
     if (content === '!tx' || content === '!taixiu') {
         if (message.channel.id !== ALLOWED_CHANNEL_ID) {
             return message.reply({ content: `❌ Lệnh này chỉ được dùng tại kênh <#${ALLOWED_CHANNEL_ID}> thôi nhé!`, ephemeral: true });
@@ -539,7 +888,7 @@ client.on('messageCreate', async (message) => {
         startTaiXiuSession(message.channel);
     }
 
-    // ===== BẦU CUA - KÊNH 1538508369306980372 =====
+    // ===== BẦU CUA =====
     if (content === '!bc' || content === '!baucua') {
         if (message.channel.id !== ALLOWED_BAUCUA_CHANNEL_ID) {
             return message.reply({ content: `❌ Lệnh này chỉ được dùng tại kênh <#${ALLOWED_BAUCUA_CHANNEL_ID}> thôi nhé!`, ephemeral: true });
@@ -556,7 +905,7 @@ client.on('messageCreate', async (message) => {
 });
 
 // ============================================================
-//  INTERACTION CREATE
+//  INTERACTION CREATE (Phần còn lại)
 // ============================================================
 client.on('interactionCreate', async (i) => {
     const session = activeSessions[i.channelId];
@@ -873,7 +1222,6 @@ client.on('interactionCreate', async (i) => {
             return i.reply({ content: '❌ Vui lòng nhập số tiền hợp lệ (tối thiểu 5,000 Gambling)!', ephemeral: true });
         }
 
-        // ===== GIỚI HẠN BẦU CUA: 20 TRIỆU (TRỪ ID ĐẶC BIỆT) =====
         if (!UNLIMITED_IDS.includes(i.user.id) && amount > MAX_BAUCUA_BET) {
             return i.reply({
                 content: `❌ Số tiền cược Bầu Cua vượt quá giới hạn **${formatMoneyFull(MAX_BAUCUA_BET)}**!\nVui lòng nhập số tiền nhỏ hơn.`,
