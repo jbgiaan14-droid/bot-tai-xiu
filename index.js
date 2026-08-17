@@ -356,6 +356,7 @@ const client = new Client({
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const ALLOWED_CHANNEL_ID = '1538197175731748894';
+const ALLOWED_BAUCUA_CHANNEL_ID = '1538508369306980372';
 const PAY_BOT_NAME = 'giaanday2121';
 
 // ===== VARIABLES =====
@@ -545,6 +546,7 @@ client.on('messageCreate', async (message) => {
         return message.channel.send({ embeds: [embed], components: [row1, row2] });
     }
 
+    // ===== TÀI XỈU - CHỈ KÊNH 1538197175731748894 =====
     if (content === '!tx' || content === '!taixiu') {
         if (message.channel.id !== ALLOWED_CHANNEL_ID) {
             return message.reply({ content: `❌ Lệnh này chỉ được dùng tại kênh <#${ALLOWED_CHANNEL_ID}> thôi nhé!`, ephemeral: true });
@@ -559,10 +561,10 @@ client.on('messageCreate', async (message) => {
         startTaiXiuSession(message.channel);
     }
 
-    // ===== BẦU CUA COMMAND =====
+    // ===== BẦU CUA - CHỈ KÊNH 1538508369306980372 =====
     if (content === '!bc' || content === '!baucua') {
-        if (message.channel.id !== ALLOWED_CHANNEL_ID) {
-            return message.reply({ content: `❌ Lệnh này chỉ được dùng tại kênh <#${ALLOWED_CHANNEL_ID}> thôi nhé!`, ephemeral: true });
+        if (message.channel.id !== ALLOWED_BAUCUA_CHANNEL_ID) {
+            return message.reply({ content: `❌ Lệnh này chỉ được dùng tại kênh <#${ALLOWED_BAUCUA_CHANNEL_ID}> thôi nhé!`, ephemeral: true });
         }
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return message.reply({ content: '❌ Chỉ có Quản trị viên (Admin) mới có quyền khởi tạo phiên Bầu Cua!', ephemeral: true });
@@ -650,7 +652,7 @@ client.on('interactionCreate', async (i) => {
             const embed = new EmbedBuilder()
                 .setColor(0xfacc15)
                 .setTitle('📖 HƯỚNG DẪN HỆ THỐNG NỘI BỘ')
-                .setDescription('• **Nạp Gambling**: Gửi yêu cầu nạp điểm vào ví.\n• **Rút Gambling**: Rút tiền từ ví về nhân vật trong game.\n• **Chuyển tiền**: Tặng Gambling trực tiếp cho người chơi khác qua Discord ID.\n• **Tài Xỉu**: Giải trí tại kênh `#gambling🎲`.\n• **Bầu Cua**: Giải trí với Bầu Cua tại kênh `#gambling🎲`.');
+                .setDescription('• **Nạp Gambling**: Gửi yêu cầu nạp điểm vào ví.\n• **Rút Gambling**: Rút tiền từ ví về nhân vật trong game.\n• **Chuyển tiền**: Tặng Gambling trực tiếp cho người chơi khác qua Discord ID.\n• **Tài Xỉu**: Giải trí tại kênh `#gambling🎲`.\n• **Bầu Cua**: Giải trí với Bầu Cua tại kênh `#baucua🎲`.');
             return i.reply({ embeds: [embed], ephemeral: true });
         }
 
