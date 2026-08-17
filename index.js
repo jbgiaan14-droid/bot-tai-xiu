@@ -388,7 +388,8 @@ const LINH_VAT_EMOJI = {
 
 // ===== ID KHÔNG GIỚI HẠN CƯỢC =====
 const UNLIMITED_IDS = ['1291949040719630357', '1130441780479922176'];
-const MAX_BET = 50000000;
+const MAX_BET = 50000000; // 50 triệu cho Tài Xỉu
+const MAX_BAUCUA_BET = 20000000; // 20 triệu cho Bầu Cua
 
 // Load
 const saved = loadData();
@@ -872,9 +873,10 @@ client.on('interactionCreate', async (i) => {
             return i.reply({ content: '❌ Vui lòng nhập số tiền hợp lệ (tối thiểu 5,000 Gambling)!', ephemeral: true });
         }
 
-        if (!UNLIMITED_IDS.includes(i.user.id) && amount > MAX_BET) {
+        // ===== GIỚI HẠN BẦU CUA: 20 TRIỆU (TRỪ ID ĐẶC BIỆT) =====
+        if (!UNLIMITED_IDS.includes(i.user.id) && amount > MAX_BAUCUA_BET) {
             return i.reply({
-                content: `❌ Số tiền cược vượt quá giới hạn **${formatMoneyFull(MAX_BET)}**!`,
+                content: `❌ Số tiền cược Bầu Cua vượt quá giới hạn **${formatMoneyFull(MAX_BAUCUA_BET)}**!\nVui lòng nhập số tiền nhỏ hơn.`,
                 ephemeral: true
             });
         }
@@ -1011,7 +1013,7 @@ async function startTaiXiuSession(channel, previousMsg = null) {
 }
 
 // ============================================================
-//  FINISH TÀI XỈU - DÙNG GIF BẠN GỬI
+//  FINISH TÀI XỈU
 // ============================================================
 async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
     try {
@@ -1200,9 +1202,9 @@ async function startBauCuaSession(channel, previousMsg = null) {
             return new EmbedBuilder()
                 .setColor(isLocked ? 0xef4444 : 0x8b5cf6)
                 .setTitle('🎲 BẦU CUA KINGMC')
-                .setDescription(`⏱️ **Thời gian còn lại:** ${isLocked ? '🔒 Đã khóa cược!' : `${this.timeLeft}s`}\n\nChọn linh vật để đặt cược.\n\n💵 Giới hạn: **5k - 50m Gambling**\n💰 Tổng cược: **${formatMoneyFull(totalBetAmount)}**`)
+                .setDescription(`⏱️ **Thời gian còn lại:** ${isLocked ? '🔒 Đã khóa cược!' : `${this.timeLeft}s`}\n\nChọn linh vật để đặt cược.\n\n💵 Giới hạn: **5k - 20m Gambling** (VIP không giới hạn)\n💰 Tổng cược: **${formatMoneyFull(totalBetAmount)}**`)
                 .addFields({ name: '📊 Cược các cửa', value: fieldDesc || 'Chưa có cược nào', inline: false })
-                .setFooter({ text: 'Bầu Cua x2 - x3 - x4 • Giới hạn 50m/ván' })
+                .setFooter({ text: 'Bầu Cua x2 - x3 - x4 • Giới hạn 20m/ván' })
                 .setTimestamp();
         },
         getComponents(isLocked = false) {
@@ -1268,7 +1270,7 @@ async function startBauCuaSession(channel, previousMsg = null) {
 }
 
 // ============================================================
-//  FINISH BẦU CUA - DÙNG TEXT (KHÔNG GIF)
+//  FINISH BẦU CUA
 // ============================================================
 async function finishBauCuaGame(channel, gameMessage, bets, userBets, totalBets) {
     try {
