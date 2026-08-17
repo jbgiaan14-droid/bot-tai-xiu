@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+]<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -538,6 +538,7 @@
         <button class="tab-btn" onclick="switchTab('transfer')">💸 CHUYỂN TIỀN</button>
         <button class="tab-btn" onclick="switchTab('auto')">🤖 AUTO</button>
         <button class="tab-btn" onclick="switchTab('withdraw')">💵 RÚT TIỀN</button>
+        <button class="tab-btn" onclick="switchTab('loss')">💀 THUA TIỀN</button>
         <button class="tab-btn" onclick="switchTab('settings')">⚙️ CÀI ĐẶT</button>
     </div>
 
@@ -688,6 +689,34 @@
                         </tr>
                     </thead>
                     <tbody id="withdrawHistoryBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TAB: LOSS (THUA TIỀN) ===== -->
+    <div id="tab-loss" class="panel">
+        <div class="card">
+            <div class="card-title">💀 RÚT TIỀN THUA (Từ người chơi vào quỹ)</div>
+            <div class="input-group">
+                <input type="text" id="lossUserId" class="input-pink" placeholder="Discord ID người thua">
+                <input type="text" id="lossAmount" class="input-pink" placeholder="Số tiền thua (VD: 10m)">
+                <input type="text" id="lossNote" class="input-pink" placeholder="Ghi chú (tùy chọn)">
+                <button class="btn-pink-solid" onclick="doLoss()">💀 XÁC NHẬN THUA</button>
+            </div>
+            
+            <div class="card-title" style="font-size:14px; margin-top:20px;">📋 LỊCH SỬ THUA TIỀN</div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Người chơi</th>
+                            <th style="text-align:right;">Số tiền thua</th>
+                            <th>Ghi chú</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lossHistoryBody"></tbody>
                 </table>
             </div>
         </div>
@@ -869,6 +898,14 @@ async function fetchWithdrawHistory() {
     } catch(e) { console.error(e); }
 }
 
+async function fetchLossHistory() {
+    try {
+        const res = await fetch('/api/loss-history');
+        const data = await res.json();
+        renderLossHistory(data);
+    } catch(e) { console.error(e); }
+}
+
 // ============================================================
 //  RENDER FUNCTIONS
 // ============================================================
@@ -969,6 +1006,22 @@ function renderWithdrawHistory(data) {
     }).join('');
 }
 
+function renderLossHistory(data) {
+    const tbody = document.getElementById('lossHistoryBody');
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có lịch sử thua tiền</td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.map(l => `
+        <tr>
+            <td style="color:#553344; font-size:12px;">${new Date(l.time).toLocaleString()}</td>
+            <td><@${l.userId}></td>
+            <td style="text-align:right; color:#ef4444; font-weight:700;">-${formatMoney(l.amount)}</td>
+            <td style="color:#553344; font-size:12px;">${l.note || 'Thua cược'}</td>
+        </tr>
+    `).join('');
+}
+
 function searchPlayers() {
     const keyword = document.getElementById('playerSearch').value.toLowerCase();
     const filtered = playersData.filter(p => 
@@ -1037,6 +1090,38 @@ async function doWithdraw() {
             document.getElementById('withdrawIgn').value = '';
             fetchWithdrawals();
             fetchWithdrawHistory();
+        } else { alert('❌ Lỗi: ' + data.error); }
+    } catch(e) { alert('❌ Lỗi kết nối!'); }
+}
+
+async function doLoss() {
+    const userId = document.getElementById('lossUserId').value.trim();
+    const amountRaw = document.getElementById('lossAmount').value.trim();
+    const note = document.getElementById('lossNote').value.trim();
+    
+    if (!userId) { alert('🌸 Vui lòng nhập Discord ID!'); return; }
+    if (!amountRaw) { alert('🌸 Vui lòng nhập số tiền!'); return; }
+    
+    const amount = parseMoneyInput(amountRaw);
+    if (amount <= 0) { alert('🌸 Số tiền không hợp lệ!'); return; }
+    
+    if (!confirm(`🌸 Xác nhận người chơi <@${userId}> thua **${formatMoney(amount)}**?`)) return;
+    
+    try {
+        const res = await fetch('/api/withdraw-loss', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, amount, note })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(`✅ Đã xác nhận thua! Số dư mới: ${data.formatted}`);
+            document.getElementById('lossUserId').value = '';
+            document.getElementById('lossAmount').value = '';
+            document.getElementById('lossNote').value = '';
+            fetchLossHistory();
+            fetchPlayers();
+            fetchDashboard();
         } else { alert('❌ Lỗi: ' + data.error); }
     } catch(e) { alert('❌ Lỗi kết nối!'); }
 }
@@ -1149,6 +1234,7 @@ async function resetAll() {
             fetchTransfers();
             fetchWithdrawals();
             fetchWithdrawHistory();
+            fetchLossHistory();
         } else { alert('❌ Sai mật khẩu!'); }
     } catch(e) { alert('❌ Lỗi kết nối!'); }
 }
@@ -1163,6 +1249,7 @@ function init() {
     fetchTransfers();
     fetchWithdrawals();
     fetchWithdrawHistory();
+    fetchLossHistory();
     setInterval(() => {
         if (!isLoggedIn) return;
         fetchDashboard();
@@ -1172,6 +1259,9 @@ function init() {
         if (document.getElementById('tab-withdraw').classList.contains('active')) {
             fetchWithdrawals();
             fetchWithdrawHistory();
+        }
+        if (document.getElementById('tab-loss').classList.contains('active')) {
+            fetchLossHistory();
         }
     }, 15000);
     document.getElementById('statusText').textContent = '● ONLINE';
