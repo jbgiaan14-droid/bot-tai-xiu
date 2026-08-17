@@ -1,4 +1,4 @@
-]<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -465,6 +465,24 @@
         }
         .search-bar .input-pink { flex: 2; min-width: 180px; }
 
+        /* ===== NOTIFICATIONS ===== */
+        .notif-container {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .notif-item {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,20,147,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .notif-item:last-child { border-bottom: none; }
+
         @media (max-width: 768px) {
             .header h1 { font-size: 20px; }
             .stat-card .value { font-size: 20px; }
@@ -691,10 +709,15 @@
                     <tbody id="withdrawHistoryBody"></tbody>
                 </table>
             </div>
+
+            <div class="card-title" style="font-size:14px; margin-top:20px;">🔔 THÔNG BÁO RÚT TIỀN</div>
+            <div class="notif-container" id="withdrawNotifications">
+                <div style="text-align:center; color:#553344; padding:20px;">🌸 Đang tải thông báo...</div>
+            </div>
         </div>
     </div>
 
-    <!-- ===== TAB: LOSS (THUA TIỀN) ===== -->
+    <!-- TAB: LOSS -->
     <div id="tab-loss" class="panel">
         <div class="card">
             <div class="card-title">💀 RÚT TIỀN THUA (Từ người chơi vào quỹ)</div>
@@ -898,6 +921,37 @@ async function fetchWithdrawHistory() {
     } catch(e) { console.error(e); }
 }
 
+async function fetchWithdrawNotifications() {
+    try {
+        const res = await fetch('/api/withdraw/notifications');
+        const data = await res.json();
+        const container = document.getElementById('withdrawNotifications');
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:#553344; padding:20px;">🌸 Chưa có thông báo rút tiền</div>';
+            return;
+        }
+        container.innerHTML = data.map(w => {
+            const statusText = w.status === 'pending' ? '⏳ Chờ duyệt' : 
+                              w.status === 'approved' ? '✅ Đã duyệt' : '❌ Từ chối';
+            const color = w.status === 'pending' ? '#facc15' : 
+                         w.status === 'approved' ? '#22c55e' : '#ef4444';
+            return `
+                <div class="notif-item">
+                    <div>
+                        <span style="color:#ff6eb4;">${w.ign}</span>
+                        <span style="color:#553344; font-size:12px; margin:0 10px;">→</span>
+                        <span style="color:#ff1493; font-weight:700;">${formatMoney(w.amount)}</span>
+                    </div>
+                    <div>
+                        <span style="color:${color};">${statusText}</span>
+                        <span style="color:#553344; font-size:10px; margin-left:10px;">${new Date(w.createdAt).toLocaleString()}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch(e) { console.error(e); }
+}
+
 async function fetchLossHistory() {
     try {
         const res = await fetch('/api/loss-history');
@@ -1090,6 +1144,7 @@ async function doWithdraw() {
             document.getElementById('withdrawIgn').value = '';
             fetchWithdrawals();
             fetchWithdrawHistory();
+            fetchWithdrawNotifications();
         } else { alert('❌ Lỗi: ' + data.error); }
     } catch(e) { alert('❌ Lỗi kết nối!'); }
 }
@@ -1192,6 +1247,7 @@ async function approveWithdraw(id) {
             alert('✅ Đã duyệt rút tiền!');
             fetchWithdrawals();
             fetchWithdrawHistory();
+            fetchWithdrawNotifications();
             fetchPlayers();
             fetchDashboard();
         } else { alert('❌ ' + data.error); }
@@ -1212,6 +1268,7 @@ async function rejectWithdraw(id) {
             alert('✅ Đã từ chối rút tiền!');
             fetchWithdrawals();
             fetchWithdrawHistory();
+            fetchWithdrawNotifications();
         } else { alert('❌ ' + data.error); }
     } catch(e) { alert('❌ Lỗi kết nối!'); }
 }
@@ -1234,6 +1291,7 @@ async function resetAll() {
             fetchTransfers();
             fetchWithdrawals();
             fetchWithdrawHistory();
+            fetchWithdrawNotifications();
             fetchLossHistory();
         } else { alert('❌ Sai mật khẩu!'); }
     } catch(e) { alert('❌ Lỗi kết nối!'); }
@@ -1249,6 +1307,7 @@ function init() {
     fetchTransfers();
     fetchWithdrawals();
     fetchWithdrawHistory();
+    fetchWithdrawNotifications();
     fetchLossHistory();
     setInterval(() => {
         if (!isLoggedIn) return;
@@ -1259,10 +1318,9 @@ function init() {
         if (document.getElementById('tab-withdraw').classList.contains('active')) {
             fetchWithdrawals();
             fetchWithdrawHistory();
+            fetchWithdrawNotifications();
         }
-        if (document.getElementById('tab-loss').classList.contains('active')) {
-            fetchLossHistory();
-        }
+        if (document.getElementById('tab-loss').classList.contains('active')) fetchLossHistory();
     }, 15000);
     document.getElementById('statusText').textContent = '● ONLINE';
 }
