@@ -436,29 +436,6 @@ function throwBauCua() {
     ];
 }
 
-function calculateBauCuaResult(bets, result) {
-    let totalWin = 0;
-    let details = [];
-    let totalBet = 0;
-
-    for (const linhVat of LINH_VAT) {
-        const betAmount = bets[linhVat] || 0;
-        totalBet += betAmount;
-        const count = result.filter(r => r === linhVat).length;
-        
-        if (count > 0 && betAmount > 0) {
-            const winAmount = betAmount * count;
-            totalWin += winAmount;
-            details.push(`**${LINH_VAT_EMOJI[linhVat]} ${linhVat}**: ra ${count} lần → +${formatMoneyFull(winAmount)} (gốc ${formatMoneyFull(betAmount)})`);
-        } else if (betAmount > 0) {
-            details.push(`**${LINH_VAT_EMOJI[linhVat]} ${linhVat}**: không ra → -${formatMoneyFull(betAmount)} (mất)`);
-        }
-    }
-
-    const profit = totalWin - totalBet;
-    return { profit, details, totalBet, totalWin, result };
-}
-
 // ===== WEBHOOK =====
 app.post('/webhook/deposit', async (req, res) => {
     let { discordId, amount, ign } = req.body;
@@ -546,7 +523,7 @@ client.on('messageCreate', async (message) => {
         return message.channel.send({ embeds: [embed], components: [row1, row2] });
     }
 
-    // ===== TÀI XỈU - CHỈ KÊNH 1538197175731748894 =====
+    // ===== TÀI XỈU - KÊNH 1538197175731748894 =====
     if (content === '!tx' || content === '!taixiu') {
         if (message.channel.id !== ALLOWED_CHANNEL_ID) {
             return message.reply({ content: `❌ Lệnh này chỉ được dùng tại kênh <#${ALLOWED_CHANNEL_ID}> thôi nhé!`, ephemeral: true });
@@ -561,7 +538,7 @@ client.on('messageCreate', async (message) => {
         startTaiXiuSession(message.channel);
     }
 
-    // ===== BẦU CUA - CHỈ KÊNH 1538508369306980372 =====
+    // ===== BẦU CUA - KÊNH 1538508369306980372 =====
     if (content === '!bc' || content === '!baucua') {
         if (message.channel.id !== ALLOWED_BAUCUA_CHANNEL_ID) {
             return message.reply({ content: `❌ Lệnh này chỉ được dùng tại kênh <#${ALLOWED_BAUCUA_CHANNEL_ID}> thôi nhé!`, ephemeral: true });
@@ -578,7 +555,7 @@ client.on('messageCreate', async (message) => {
 });
 
 // ============================================================
-//  INTERACTION CREATE - TÀI XỈU & BẦU CUA
+//  INTERACTION CREATE
 // ============================================================
 client.on('interactionCreate', async (i) => {
     const session = activeSessions[i.channelId];
@@ -797,7 +774,7 @@ client.on('interactionCreate', async (i) => {
         }
     }
 
-    // ===== TÀI XỈU BET BUTTON =====
+    // ===== TÀI XỈU BET =====
     if (i.isButton() && (i.customId === 'bet_tai' || i.customId === 'bet_xiu')) {
         if (!session) return i.reply({ content: '❌ Phiên đã kết thúc!', ephemeral: true });
         if (session.timeLeft <= 5) return i.reply({ content: '❌ Đã khóa cược!', ephemeral: true });
@@ -858,7 +835,7 @@ client.on('interactionCreate', async (i) => {
         return;
     }
 
-    // ===== BẦU CUA BET BUTTON =====
+    // ===== BẦU CUA BET =====
     if (i.isButton() && i.customId.startsWith('bet_bc_')) {
         const linhVat = i.customId.replace('bet_bc_', '');
         if (!LINH_VAT.includes(linhVat)) return;
@@ -1034,7 +1011,7 @@ async function startTaiXiuSession(channel, previousMsg = null) {
 }
 
 // ============================================================
-//  FINISH GAME - TÀI XỈU
+//  FINISH TÀI XỈU
 // ============================================================
 async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
     try {
@@ -1225,7 +1202,7 @@ async function startBauCuaSession(channel, previousMsg = null) {
                 .setTitle('🎲 BẦU CUA KINGMC')
                 .setDescription(`⏱️ **Thời gian còn lại:** ${isLocked ? '🔒 Đã khóa cược!' : `${this.timeLeft}s`}\n\nChọn linh vật để đặt cược.\n\n💵 Giới hạn: **5k - 50m Gambling**\n💰 Tổng cược: **${formatMoneyFull(totalBetAmount)}**`)
                 .addFields({ name: '📊 Cược các cửa', value: fieldDesc || 'Chưa có cược nào', inline: false })
-                .setFooter({ text: 'Bầu Cua x1 - x2 - x3 • Giới hạn 50m/ván' })
+                .setFooter({ text: 'Bầu Cua x2 - x3 - x4 • Giới hạn 50m/ván' })
                 .setTimestamp();
         },
         getComponents(isLocked = false) {
@@ -1291,7 +1268,7 @@ async function startBauCuaSession(channel, previousMsg = null) {
 }
 
 // ============================================================
-//  FINISH BẦU CUA GAME
+//  FINISH BẦU CUA - TRẢ THƯỞNG x2, x3, x4
 // ============================================================
 async function finishBauCuaGame(channel, gameMessage, bets, userBets, totalBets) {
     try {
@@ -1314,13 +1291,19 @@ async function finishBauCuaGame(channel, gameMessage, bets, userBets, totalBets)
                 const userObj = await client.users.fetch(uid).catch(() => null);
 
                 if (dem > 0) {
-                    const tienThang = amount * dem;
-                    balances[uid] += tienThang;
-                    res += `🎉 <@${uid}> thắng **+${formatMoneyFull(tienThang)}** (x${dem}) - Số dư: ${formatMoneyFull(balances[uid])}\n`;
+                    // ===== TRẢ THƯỞNG ĐÚNG LUẬT BẦU CUA =====
+                    // Ra 1 con → x2, Ra 2 con → x3, Ra 3 con → x4
+                    const multiplier = dem + 1;
+                    const totalReceive = amount * multiplier;
+                    const profit = totalReceive - amount;
+                    balances[uid] += totalReceive;
+                    
+                    const star = dem === 1 ? '⭐' : dem === 2 ? '🌟🌟' : '🌟🌟🌟';
+                    res += `🎉 <@${uid}> thắng **+${formatMoneyFull(totalReceive)}** (x${multiplier}) ${star} - Lãi: **+${formatMoneyFull(profit)}** - Số dư: ${formatMoneyFull(balances[uid])}\n`;
 
                     if (userObj) {
                         try {
-                            await userObj.send(`🎲 Bầu Cua #${currentSessionId}: ${resultStr}\n✅ Thắng **${formatMoneyFull(tienThang)}** (x${dem})\n💰 Số dư: **${formatMoneyFull(balances[uid])}**`);
+                            await userObj.send(`🎲 Bầu Cua #${currentSessionId}: ${resultStr}\n✅ ${linhVat} ra ${dem} lần → THẮNG **${formatMoneyFull(totalReceive)}** (x${multiplier})\n📈 Lãi: **+${formatMoneyFull(profit)}**\n💰 Số dư: **${formatMoneyFull(balances[uid])}**`);
                         } catch (err) {}
                     }
                 } else {
@@ -1328,7 +1311,7 @@ async function finishBauCuaGame(channel, gameMessage, bets, userBets, totalBets)
 
                     if (userObj) {
                         try {
-                            await userObj.send(`🎲 Bầu Cua #${currentSessionId}: ${resultStr}\n❌ Thua **${formatMoneyFull(amount)}**\n💰 Số dư: **${formatMoneyFull(balances[uid])}**`);
+                            await userObj.send(`🎲 Bầu Cua #${currentSessionId}: ${resultStr}\n❌ ${linhVat} không ra → THUA **${formatMoneyFull(amount)}**\n💰 Số dư: **${formatMoneyFull(balances[uid])}**`);
                         } catch (err) {}
                     }
                 }
