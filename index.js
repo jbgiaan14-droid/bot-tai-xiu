@@ -12,7 +12,6 @@ app.use(express.static('public'));
 const SESSION_PASSWORD = 'Z0N6Hz9UzGX';
 let isAuthenticated = false;
 
-// API kiểm tra đăng nhập
 app.post('/api/login', (req, res) => {
     const { password } = req.body;
     if (password === SESSION_PASSWORD) {
@@ -32,7 +31,6 @@ app.post('/api/logout', (req, res) => {
     res.json({ success: true });
 });
 
-// Middleware bảo vệ API
 app.use((req, res, next) => {
     if (req.path === '/api/login' || req.path === '/api/check-auth' || req.path === '/api/logout') {
         return next();
@@ -541,6 +539,9 @@ client.on('interactionCreate', async (i) => {
             return await i.reply({ content: `✅ Đã tạo yêu cầu rút **${formatMoneyFull(amount)}** về nhân vật **${ign}** thành công!`, ephemeral: true });
         }
 
+        // ============================================================
+        //  MODAL CHUYỂN TIỀN - CÓ GIỚI HẠN + DM
+        // ============================================================
         if (i.customId === 'modal_chuyen') {
             let targetInput = i.fields.getTextInputValue('chuyen_target').replace(/[<@!>]/g, '').trim();
             const rawAmount = i.fields.getTextInputValue('chuyen_amount');
@@ -549,6 +550,18 @@ client.on('interactionCreate', async (i) => {
             if (isNaN(amount) || amount <= 0) {
                 return i.reply({ content: '❌ Số tiền chuyển không hợp lệ!', ephemeral: true });
             }
+            
+            // ===== GIỚI HẠN CHUYỂN TIỀN 1M - 100M =====
+            const MIN_TRANSFER = 1_000_000;
+            const MAX_TRANSFER = 100_000_000;
+            
+            if (amount < MIN_TRANSFER) {
+                return i.reply({ content: `❌ Số tiền chuyển tối thiểu là **${formatMoneyFull(MIN_TRANSFER)}**!`, ephemeral: true });
+            }
+            if (amount > MAX_TRANSFER) {
+                return i.reply({ content: `❌ Số tiền chuyển tối đa là **${formatMoneyFull(MAX_TRANSFER)}**!`, ephemeral: true });
+            }
+            
             if (getBalance(i.user.id) < amount) {
                 return i.reply({ content: `❌ Số dư của bạn không đủ để chuyển!`, ephemeral: true });
             }
@@ -559,6 +572,29 @@ client.on('interactionCreate', async (i) => {
             balances[i.user.id] -= amount;
             balances[targetInput] = (balances[targetInput] || 100000000) + amount;
             saveData();
+
+            // ===== GỬI DM THÔNG BÁO CHO NGƯỜI NHẬN =====
+            try {
+                const receiver = await client.users.fetch(targetInput);
+                if (receiver) {
+                    const sender = await client.users.fetch(i.user.id);
+                    const embedDM = new EmbedBuilder()
+                        .setColor(0xfacc15)
+                        .setTitle('💳 NHẬN TIỀN GAMBLING')
+                        .setDescription(`Bạn vừa nhận được **${formatMoneyFull(amount)}** từ **${sender ? sender.username : 'Unknown'}**!`)
+                        .addFields(
+                            { name: '💰 Số tiền nhận', value: `**${formatMoneyFull(amount)}**`, inline: true },
+                            { name: '📊 Số dư hiện tại', value: `**${formatMoneyFull(balances[targetInput])}**`, inline: true },
+                            { name: '👤 Người gửi', value: `${sender ? `<@${i.user.id}>` : 'Unknown'}`, inline: true }
+                        )
+                        .setTimestamp()
+                        .setFooter({ text: 'KingMC Gambling • Hệ thống nội bộ' });
+                    
+                    await receiver.send({ embeds: [embedDM] });
+                }
+            } catch (err) {
+                console.log(`⚠️ Không thể gửi DM cho ${targetInput}:`, err.message);
+            }
 
             return await i.reply({ content: `✅ Đã chuyển thành công **${formatMoneyFull(amount)}** cho thành viên <@${targetInput}>!`, ephemeral: true });
         }
@@ -585,7 +621,7 @@ client.on('interactionCreate', async (i) => {
         return await i.showModal(modal);
     }
 
-    // ===== MODAL ĐẶT CƯỢC - CÓ GIỚI HẠN 50M =====
+    // ===== MODAL ĐẶT CƯỢC - GIỚI HẠN 50M =====
     if (i.isModalSubmit() && i.customId.startsWith('modal_bet_')) {
         if (!session) return i.reply({ content: '❌ Phiên đã kết thúc!', ephemeral: true });
 
@@ -822,7 +858,7 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                     let streak = userLoseStreaks[uid];
                     const lossAmount = betInfo.amount;
 
-                    // ===== KHÔNG CÒN HỒI SINH 100M - CHỈ THÔNG BÁO HẾT TIỀN =====
+                    // ===== KHÔNG CÒN HỒI SINH 100M =====
                     if (balances[uid] < 5000) {
                         res += `💀 <@${uid}> đã hết tiền! Không thể tiếp tục đặt cược.\n`;
                         if (userObj) {
