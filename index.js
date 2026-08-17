@@ -1011,14 +1011,15 @@ async function startTaiXiuSession(channel, previousMsg = null) {
 }
 
 // ============================================================
-//  FINISH TÀI XỈU
+//  FINISH TÀI XỈU - ĐÃ SỬA GIF
 // ============================================================
 async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
     try {
         totalGameCount++;
         const currentSessionId = totalGameCount;
 
-        const rollingMsg = await channel.send('🎲 **ĐANG LẮC XÚC XẮC...**\nhttps://media.tenor.com/9yvCLdM4wLwAAAAC/dice-roll.gif');
+        // ===== GIF LẮC XÚC XẮC MỚI (DÙNG TEXT ANIMATION) =====
+        const rollingMsg = await channel.send('🎲 **ĐANG LẮC XÚC XẮC...**\n⚀ ⚁ ⚂ ⚃ ⚄ ⚅');
         try { await gameMessage.delete(); } catch(e) {}
 
         setTimeout(async () => {
@@ -1268,14 +1269,15 @@ async function startBauCuaSession(channel, previousMsg = null) {
 }
 
 // ============================================================
-//  FINISH BẦU CUA - TRẢ THƯỞNG x2, x3, x4
+//  FINISH BẦU CUA - ĐÃ SỬA GIF + TRẢ THƯỞNG x2, x3, x4
 // ============================================================
 async function finishBauCuaGame(channel, gameMessage, bets, userBets, totalBets) {
     try {
         totalGameCount++;
         const currentSessionId = totalGameCount;
 
-        const rollingMsg = await channel.send('🎲 **ĐANG LẮC BẦU CUA...**\nhttps://media.tenor.com/9yvCLdM4wLwAAAAC/dice-roll.gif');
+        // ===== GIF LẮC BẦU CUA (DÙNG TEXT ANIMATION) =====
+        const rollingMsg = await channel.send('🎲 **ĐANG LẮC BẦU CUA...**\n🔄 Đang xáo...');
         try { await gameMessage.delete(); } catch(e) {}
 
         setTimeout(async () => {
