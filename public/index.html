@@ -443,20 +443,6 @@
             margin-bottom: 5px;
         }
 
-        .auto-status {
-            margin-top: 12px;
-            padding: 12px 18px;
-            background: rgba(255, 20, 147, 0.05);
-            border-radius: 10px;
-            border: 1px solid rgba(255, 20, 147, 0.08);
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            font-size: 13px;
-        }
-        .auto-status span { color: #885577; }
-        .auto-status .val { color: #ff6eb4; }
-
         .search-bar {
             display: flex;
             gap: 10px;
@@ -465,23 +451,47 @@
         }
         .search-bar .input-pink { flex: 2; min-width: 180px; }
 
-        /* ===== NOTIFICATIONS ===== */
-        .notif-container {
-            max-height: 200px;
-            overflow-y: auto;
-            background: rgba(0,0,0,0.2);
+        /* ===== EXTRA STATS ===== */
+        .uptime-box {
+            background: rgba(255, 20, 147, 0.05);
+            border: 1px solid rgba(255, 20, 147, 0.1);
             border-radius: 8px;
-            padding: 10px;
-        }
-        .notif-item {
-            padding: 10px;
-            border-bottom: 1px solid rgba(255,20,147,0.05);
+            padding: 12px 18px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
             flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 10px;
         }
-        .notif-item:last-child { border-bottom: none; }
+        .uptime-box span { color: #885577; }
+        .uptime-box .val { color: #ff6eb4; }
+
+        .chart-container {
+            display: flex;
+            align-items: flex-end;
+            height: 150px;
+            gap: 12px;
+            padding: 10px 0;
+            margin-top: 10px;
+        }
+        .chart-bar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .chart-bar .bar {
+            width: 100%;
+            max-width: 40px;
+            min-height: 4px;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.6s ease;
+            position: relative;
+        }
+        .chart-bar .bar.win { background: linear-gradient(180deg, #ff1493, #ff6eb4); }
+        .chart-bar .bar.lose { background: linear-gradient(180deg, #6b21a8, #8b5cf6); }
+        .chart-bar .label { font-size: 10px; color: #553344; }
+        .chart-bar .value-text { font-size: 9px; color: #885577; }
 
         @media (max-width: 768px) {
             .header h1 { font-size: 20px; }
@@ -492,6 +502,7 @@
             .settings-row { grid-template-columns: 1fr; }
             .login-box { padding: 35px 25px; }
             .login-box h1 { font-size: 20px; }
+            .chart-container { height: 100px; gap: 8px; }
         }
     </style>
 </head>
@@ -554,9 +565,9 @@
         <button class="tab-btn active" onclick="switchTab('players')">👤 NGƯỜI CHƠI</button>
         <button class="tab-btn" onclick="switchTab('history')">📜 LỊCH SỬ</button>
         <button class="tab-btn" onclick="switchTab('transfer')">💸 CHUYỂN TIỀN</button>
-        <button class="tab-btn" onclick="switchTab('auto')">🤖 AUTO</button>
-        <button class="tab-btn" onclick="switchTab('withdraw')">💵 RÚT TIỀN</button>
-        <button class="tab-btn" onclick="switchTab('loss')">💀 THUA TIỀN</button>
+        <button class="tab-btn" onclick="switchTab('stats')">📊 THỐNG KÊ</button>
+        <button class="tab-btn" onclick="switchTab('top')">🔥 TOP PLAYER</button>
+        <button class="tab-btn" onclick="switchTab('rewards')">🏆 GIẢI THƯỞNG</button>
         <button class="tab-btn" onclick="switchTab('settings')">⚙️ CÀI ĐẶT</button>
     </div>
 
@@ -634,112 +645,68 @@
         </div>
     </div>
 
-    <!-- TAB: AUTO -->
-    <div id="tab-auto" class="panel">
+    <!-- TAB: STATS -->
+    <div id="tab-stats" class="panel">
         <div class="card">
-            <div class="card-title">🤖 AUTO TRANSFER</div>
-            <div class="settings-row">
-                <div>
-                    <label>Trạng thái</label>
-                    <select id="autoEnabled" class="input-pink" style="width:100%;">
-                        <option value="true">✅ Bật</option>
-                        <option value="false" selected>❌ Tắt</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Khoảng cách (phút)</label>
-                    <input type="number" id="autoInterval" class="input-pink" style="width:100%;" placeholder="30" value="30">
-                </div>
-                <div>
-                    <label>Số tiền mỗi lần</label>
-                    <input type="text" id="autoAmount" class="input-pink" style="width:100%;" placeholder="1m" value="1m">
-                </div>
-                <div>
-                    <label>Discord ID người nhận</label>
-                    <input type="text" id="autoUserId" class="input-pink" style="width:100%;" placeholder="Nhập ID">
+            <div class="card-title">📊 THỐNG KÊ HỆ THỐNG</div>
+            
+            <div style="margin-bottom:15px;">
+                <h4 style="color:#885577; font-size:12px; margin-bottom:5px;">⏱️ THỜI GIAN HOẠT ĐỘNG</h4>
+                <div class="uptime-box">
+                    <div>⏰ Uptime: <span class="val" id="uptimeDisplay">Đang tải...</span></div>
+                    <div>🎲 Tổng phiên: <span class="val" id="totalGamesStats">0</span></div>
+                    <div>📈 Phiên/giờ: <span class="val" id="gamesPerHour">0</span></div>
                 </div>
             </div>
-            <button class="btn-pink-solid" style="margin-top:15px;" onclick="saveAutoTransfer()">💾 LƯU AUTO</button>
-            <div class="auto-status">
-                <div>📌 Trạng thái: <span class="val" id="autoStatusText">Đang tắt</span></div>
-                <div>⏱️ Lần chạy cuối: <span class="val" id="autoLastRun">Chưa chạy</span></div>
+
+            <h4 style="color:#885577; font-size:12px; margin-bottom:10px;">📊 THỐNG KÊ THẮNG/THUA 7 NGÀY QUA</h4>
+            <div class="chart-container" id="dailyChart"></div>
+        </div>
+    </div>
+
+    <!-- TAB: TOP PLAYER -->
+    <div id="tab-top" class="panel">
+        <div class="card">
+            <div class="card-title">🔥 TOP 5 NGƯỜI CHƠI HOT</div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Người chơi</th>
+                            <th style="text-align:center;">Thắng</th>
+                            <th style="text-align:center;">Thua</th>
+                            <th style="text-align:center;">Tỉ lệ thắng</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topPlayersBody"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- TAB: WITHDRAW -->
-    <div id="tab-withdraw" class="panel">
+    <!-- TAB: REWARDS -->
+    <div id="tab-rewards" class="panel">
         <div class="card">
-            <div class="card-title">💵 RÚT TIỀN (Yêu cầu Admin duyệt)</div>
-            <div class="input-group">
-                <input type="text" id="withdrawUserId" class="input-pink" placeholder="Discord ID của bạn">
-                <input type="text" id="withdrawAmount" class="input-pink" placeholder="Số tiền (VD: 10m)">
-                <input type="text" id="withdrawIgn" class="input-pink" placeholder="IGN nhận tiền trong game">
-                <button class="btn-pink-solid" onclick="doWithdraw()">💵 GỬI YÊU CẦU</button>
+            <div class="card-title">🏆 GIẢI THƯỞNG HÀNG TUẦN</div>
+            <div style="margin-bottom:15px;">
+                <button class="btn-pink-solid" onclick="runWeeklyRewards()">🎁 CHẠY GIẢI THƯỞNG</button>
+                <span style="color:#553344; font-size:12px; margin-left:10px;">(Top 5 người chơi có số dư cao nhất)</span>
             </div>
-            
-            <div class="card-title" style="font-size:14px; margin-top:20px;">⏳ DANH SÁCH CHỜ DUYỆT</div>
+            <div style="background:rgba(255,20,147,0.05); border-radius:8px; padding:15px; margin-bottom:15px;">
+                <div style="color:#885577; font-size:12px;">📌 Lần chạy cuối: <span class="val" id="rewardsLastRun" style="color:#ff6eb4;">Chưa chạy</span></div>
+            </div>
             <div class="table-wrap">
                 <table>
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th>🏆 Hạng</th>
                             <th>Người chơi</th>
-                            <th>IGN</th>
-                            <th style="text-align:right;">Số tiền</th>
-                            <th style="text-align:center;">Action</th>
+                            <th style="text-align:right;">Số dư</th>
+                            <th style="text-align:right;">Giải thưởng</th>
                         </tr>
                     </thead>
-                    <tbody id="withdrawTableBody"></tbody>
-                </table>
-            </div>
-            
-            <div class="card-title" style="font-size:14px; margin-top:20px;">📜 LỊCH SỬ RÚT TIỀN</div>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Thời gian</th>
-                            <th>Người chơi</th>
-                            <th>IGN</th>
-                            <th style="text-align:right;">Số tiền</th>
-                            <th style="text-align:center;">Trạng thái</th>
-                        </tr>
-                    </thead>
-                    <tbody id="withdrawHistoryBody"></tbody>
-                </table>
-            </div>
-
-            <div class="card-title" style="font-size:14px; margin-top:20px;">🔔 THÔNG BÁO RÚT TIỀN</div>
-            <div class="notif-container" id="withdrawNotifications">
-                <div style="text-align:center; color:#553344; padding:20px;">🌸 Đang tải thông báo...</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- TAB: LOSS -->
-    <div id="tab-loss" class="panel">
-        <div class="card">
-            <div class="card-title">💀 RÚT TIỀN THUA (Từ người chơi vào quỹ)</div>
-            <div class="input-group">
-                <input type="text" id="lossUserId" class="input-pink" placeholder="Discord ID người thua">
-                <input type="text" id="lossAmount" class="input-pink" placeholder="Số tiền thua (VD: 10m)">
-                <input type="text" id="lossNote" class="input-pink" placeholder="Ghi chú (tùy chọn)">
-                <button class="btn-pink-solid" onclick="doLoss()">💀 XÁC NHẬN THUA</button>
-            </div>
-            
-            <div class="card-title" style="font-size:14px; margin-top:20px;">📋 LỊCH SỬ THUA TIỀN</div>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Thời gian</th>
-                            <th>Người chơi</th>
-                            <th style="text-align:right;">Số tiền thua</th>
-                            <th>Ghi chú</th>
-                        </tr>
-                    </thead>
-                    <tbody id="lossHistoryBody"></tbody>
+                    <tbody id="rewardsBody"></tbody>
                 </table>
             </div>
         </div>
@@ -905,58 +872,37 @@ async function fetchTransfers() {
     } catch(e) { console.error(e); }
 }
 
-async function fetchWithdrawals() {
+async function fetchUptime() {
     try {
-        const res = await fetch('/api/withdraw/pending');
+        const res = await fetch('/api/uptime');
         const data = await res.json();
-        renderWithdrawals(data);
+        document.getElementById('uptimeDisplay').textContent = data.uptime;
+        document.getElementById('totalGamesStats').textContent = data.totalGames;
+        document.getElementById('gamesPerHour').textContent = data.gamesPerHour;
     } catch(e) { console.error(e); }
 }
 
-async function fetchWithdrawHistory() {
+async function fetchDailyStats() {
     try {
-        const res = await fetch('/api/withdraw/history');
+        const res = await fetch('/api/stats/daily');
         const data = await res.json();
-        renderWithdrawHistory(data);
+        renderChart(data);
     } catch(e) { console.error(e); }
 }
 
-async function fetchWithdrawNotifications() {
+async function fetchTopPlayers() {
     try {
-        const res = await fetch('/api/withdraw/notifications');
+        const res = await fetch('/api/top-players');
         const data = await res.json();
-        const container = document.getElementById('withdrawNotifications');
-        if (!data || data.length === 0) {
-            container.innerHTML = '<div style="text-align:center; color:#553344; padding:20px;">🌸 Chưa có thông báo rút tiền</div>';
-            return;
-        }
-        container.innerHTML = data.map(w => {
-            const statusText = w.status === 'pending' ? '⏳ Chờ duyệt' : 
-                              w.status === 'approved' ? '✅ Đã duyệt' : '❌ Từ chối';
-            const color = w.status === 'pending' ? '#facc15' : 
-                         w.status === 'approved' ? '#22c55e' : '#ef4444';
-            return `
-                <div class="notif-item">
-                    <div>
-                        <span style="color:#ff6eb4;">${w.ign}</span>
-                        <span style="color:#553344; font-size:12px; margin:0 10px;">→</span>
-                        <span style="color:#ff1493; font-weight:700;">${formatMoney(w.amount)}</span>
-                    </div>
-                    <div>
-                        <span style="color:${color};">${statusText}</span>
-                        <span style="color:#553344; font-size:10px; margin-left:10px;">${new Date(w.createdAt).toLocaleString()}</span>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        renderTopPlayers(data);
     } catch(e) { console.error(e); }
 }
 
-async function fetchLossHistory() {
+async function fetchWeeklyRewards() {
     try {
-        const res = await fetch('/api/loss-history');
+        const res = await fetch('/api/weekly-rewards');
         const data = await res.json();
-        renderLossHistory(data);
+        renderRewards(data);
     } catch(e) { console.error(e); }
 }
 
@@ -1017,61 +963,65 @@ function renderTransfers(data) {
     `).join('');
 }
 
-function renderWithdrawals(data) {
-    const tbody = document.getElementById('withdrawTableBody');
+function renderChart(data) {
+    const container = document.getElementById('dailyChart');
     if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có yêu cầu rút tiền</td></tr>';
+        container.innerHTML = '<div style="color:#553344; padding:20px;">🌸 Chưa có dữ liệu</div>';
         return;
     }
-    tbody.innerHTML = data.map(w => `
-        <tr>
-            <td style="color:#553344; font-size:11px;">${w.id}</td>
-            <td><@${w.userId}></td>
-            <td style="color:#ff6eb4;">${w.ign}</td>
-            <td style="text-align:right; color:#ff1493; font-weight:700;">${formatMoney(w.amount)}</td>
-            <td style="text-align:center;">
-                <button class="btn-pink-solid" style="padding:4px 12px; font-size:11px; margin-right:4px;" onclick="approveWithdraw('${w.id}')">✅ Duyệt</button>
-                <button class="btn-danger-pink" onclick="rejectWithdraw('${w.id}')">❌ Từ chối</button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-function renderWithdrawHistory(data) {
-    const tbody = document.getElementById('withdrawHistoryBody');
-    if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có lịch sử rút tiền</td></tr>';
-        return;
-    }
-    tbody.innerHTML = data.map(w => {
-        let statusText = '', color = '';
-        if (w.status === 'approved') { statusText = '✅ Đã duyệt'; color = '#22c55e'; }
-        else if (w.status === 'rejected') { statusText = '❌ Từ chối'; color = '#ef4444'; }
-        else { statusText = '⏳ Chờ duyệt'; color = '#facc15'; }
+    const maxVal = Math.max(...data.map(d => Math.max(d.win, d.lose)), 1);
+    container.innerHTML = data.map(d => {
+        const winH = maxVal > 0 ? (d.win / maxVal) * 100 : 0;
+        const loseH = maxVal > 0 ? (d.lose / maxVal) * 100 : 0;
         return `
-            <tr>
-                <td style="color:#553344; font-size:12px;">${new Date(w.createdAt).toLocaleString()}</td>
-                <td><@${w.userId}></td>
-                <td style="color:#ff6eb4;">${w.ign}</td>
-                <td style="text-align:right; color:#ff1493; font-weight:700;">${formatMoney(w.amount)}</td>
-                <td style="text-align:center; color:${color};">${statusText}</td>
-            </tr>
+            <div class="chart-bar">
+                <div class="bar win" style="height:${Math.max(winH, 2)}%;"></div>
+                <div class="bar lose" style="height:${Math.max(loseH, 2)}%;"></div>
+                <div class="label">${d.label}</div>
+                <div class="value-text">${formatMoney(d.win + d.lose)}</div>
+            </div>
         `;
     }).join('');
 }
 
-function renderLossHistory(data) {
-    const tbody = document.getElementById('lossHistoryBody');
+function renderTopPlayers(data) {
+    const tbody = document.getElementById('topPlayersBody');
     if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có lịch sử thua tiền</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có dữ liệu</td></tr>';
         return;
     }
-    tbody.innerHTML = data.map(l => `
+    const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+    tbody.innerHTML = data.map((p, i) => `
         <tr>
-            <td style="color:#553344; font-size:12px;">${new Date(l.time).toLocaleString()}</td>
-            <td><@${l.userId}></td>
-            <td style="text-align:right; color:#ef4444; font-weight:700;">-${formatMoney(l.amount)}</td>
-            <td style="color:#553344; font-size:12px;">${l.note || 'Thua cược'}</td>
+            <td style="font-size:20px;">${medals[i] || `#${i+1}`}</td>
+            <td style="color:#ff6eb4;">${p.username || 'Unknown'}</td>
+            <td style="text-align:center; color:#22c55e;">${p.wins}</td>
+            <td style="text-align:center; color:#ef4444;">${p.losses}</td>
+            <td style="text-align:center; color:#ff1493; font-weight:700;">${p.winRate}%</td>
+        </tr>
+    `).join('');
+}
+
+function renderRewards(data) {
+    const tbody = document.getElementById('rewardsBody');
+    const lastRun = document.getElementById('rewardsLastRun');
+    if (data.lastRun) {
+        lastRun.textContent = new Date(data.lastRun).toLocaleString();
+    } else {
+        lastRun.textContent = 'Chưa chạy';
+    }
+    if (!data.winners || data.winners.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#553344; padding:30px;">🌸 Chưa có giải thưởng</td></tr>';
+        return;
+    }
+    const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+    const rewards = ['5m', '3m', '2m', '1m', '500k'];
+    tbody.innerHTML = data.winners.map((w, i) => `
+        <tr>
+            <td style="font-size:20px;">${medals[i] || `#${i+1}`}</td>
+            <td style="color:#ff6eb4;"><@${w.userId}></td>
+            <td style="text-align:right; color:#ff1493;">${formatMoney(w.balance)}</td>
+            <td style="text-align:right; color:#22c55e;">+${rewards[i] || '0'}</td>
         </tr>
     `).join('');
 }
@@ -1116,71 +1066,6 @@ async function doTransfer() {
     } catch(e) { alert('❌ Lỗi kết nối!'); }
 }
 
-async function doWithdraw() {
-    const userId = document.getElementById('withdrawUserId').value.trim();
-    const amountRaw = document.getElementById('withdrawAmount').value.trim();
-    const ign = document.getElementById('withdrawIgn').value.trim();
-    
-    if (!userId) { alert('🌸 Vui lòng nhập Discord ID!'); return; }
-    if (!amountRaw) { alert('🌸 Vui lòng nhập số tiền!'); return; }
-    if (!ign) { alert('🌸 Vui lòng nhập IGN!'); return; }
-    
-    const amount = parseMoneyInput(amountRaw);
-    if (amount <= 0) { alert('🌸 Số tiền không hợp lệ!'); return; }
-    if (amount < 1000000) { alert('🌸 Số tiền rút tối thiểu là 1M!'); return; }
-    if (amount > 100000000) { alert('🌸 Số tiền rút tối đa là 100M!'); return; }
-    
-    try {
-        const res = await fetch('/api/withdraw', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, amount, ign })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert(`✅ ${data.message}`);
-            document.getElementById('withdrawUserId').value = '';
-            document.getElementById('withdrawAmount').value = '';
-            document.getElementById('withdrawIgn').value = '';
-            fetchWithdrawals();
-            fetchWithdrawHistory();
-            fetchWithdrawNotifications();
-        } else { alert('❌ Lỗi: ' + data.error); }
-    } catch(e) { alert('❌ Lỗi kết nối!'); }
-}
-
-async function doLoss() {
-    const userId = document.getElementById('lossUserId').value.trim();
-    const amountRaw = document.getElementById('lossAmount').value.trim();
-    const note = document.getElementById('lossNote').value.trim();
-    
-    if (!userId) { alert('🌸 Vui lòng nhập Discord ID!'); return; }
-    if (!amountRaw) { alert('🌸 Vui lòng nhập số tiền!'); return; }
-    
-    const amount = parseMoneyInput(amountRaw);
-    if (amount <= 0) { alert('🌸 Số tiền không hợp lệ!'); return; }
-    
-    if (!confirm(`🌸 Xác nhận người chơi <@${userId}> thua **${formatMoney(amount)}**?`)) return;
-    
-    try {
-        const res = await fetch('/api/withdraw-loss', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, amount, note })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert(`✅ Đã xác nhận thua! Số dư mới: ${data.formatted}`);
-            document.getElementById('lossUserId').value = '';
-            document.getElementById('lossAmount').value = '';
-            document.getElementById('lossNote').value = '';
-            fetchLossHistory();
-            fetchPlayers();
-            fetchDashboard();
-        } else { alert('❌ Lỗi: ' + data.error); }
-    } catch(e) { alert('❌ Lỗi kết nối!'); }
-}
-
 async function saveSettings() {
     const winRate = parseInt(document.getElementById('winRateInput').value);
     const gaiRate = parseInt(document.getElementById('gaiRateInput').value);
@@ -1193,31 +1078,6 @@ async function saveSettings() {
         const data = await res.json();
         if (data.success) { alert('✅ Đã lưu cài đặt!'); fetchDashboard(); }
     } catch(e) { alert('❌ Lỗi kết nối!'); }
-}
-
-async function saveAutoTransfer() {
-    const enabled = document.getElementById('autoEnabled').value === 'true';
-    const interval = parseInt(document.getElementById('autoInterval').value) || 0;
-    const amountRaw = document.getElementById('autoAmount').value.trim();
-    const userId = document.getElementById('autoUserId').value.trim();
-    const amount = parseMoneyInput(amountRaw);
-    try {
-        const res = await fetch('/api/auto-transfer', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ enabled, interval, amount, userId })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert('✅ Đã lưu Auto Transfer!');
-            updateAutoStatus(data.autoTransfer);
-        }
-    } catch(e) { alert('❌ Lỗi kết nối!'); }
-}
-
-function updateAutoStatus(auto) {
-    document.getElementById('autoStatusText').textContent = auto.enabled ? '✅ Đang bật' : '❌ Đang tắt';
-    document.getElementById('autoLastRun').textContent = auto.lastRun ? new Date(auto.lastRun).toLocaleString() : 'Chưa chạy';
 }
 
 async function resetStreak(userId) {
@@ -1233,42 +1093,21 @@ async function resetStreak(userId) {
     } catch(e) { alert('❌ Lỗi kết nối!'); }
 }
 
-async function approveWithdraw(id) {
-    const password = prompt('🌸 Nhập mật khẩu Admin để duyệt:');
+async function runWeeklyRewards() {
+    const password = prompt('🌸 Nhập mật khẩu Admin để chạy giải thưởng:');
     if (!password) return;
     try {
-        const res = await fetch('/api/withdraw/approve', {
+        const res = await fetch('/api/weekly-rewards/run', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, password })
+            body: JSON.stringify({ password })
         });
         const data = await res.json();
         if (data.success) {
-            alert('✅ Đã duyệt rút tiền!');
-            fetchWithdrawals();
-            fetchWithdrawHistory();
-            fetchWithdrawNotifications();
+            alert('✅ Đã chạy giải thưởng hàng tuần!');
+            fetchWeeklyRewards();
             fetchPlayers();
             fetchDashboard();
-        } else { alert('❌ ' + data.error); }
-    } catch(e) { alert('❌ Lỗi kết nối!'); }
-}
-
-async function rejectWithdraw(id) {
-    const password = prompt('🌸 Nhập mật khẩu Admin để từ chối:');
-    if (!password) return;
-    try {
-        const res = await fetch('/api/withdraw/reject', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, password })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert('✅ Đã từ chối rút tiền!');
-            fetchWithdrawals();
-            fetchWithdrawHistory();
-            fetchWithdrawNotifications();
         } else { alert('❌ ' + data.error); }
     } catch(e) { alert('❌ Lỗi kết nối!'); }
 }
@@ -1289,10 +1128,10 @@ async function resetAll() {
             fetchPlayers();
             fetchHistory();
             fetchTransfers();
-            fetchWithdrawals();
-            fetchWithdrawHistory();
-            fetchWithdrawNotifications();
-            fetchLossHistory();
+            fetchUptime();
+            fetchDailyStats();
+            fetchTopPlayers();
+            fetchWeeklyRewards();
         } else { alert('❌ Sai mật khẩu!'); }
     } catch(e) { alert('❌ Lỗi kết nối!'); }
 }
@@ -1305,22 +1144,20 @@ function init() {
     fetchPlayers();
     fetchHistory();
     fetchTransfers();
-    fetchWithdrawals();
-    fetchWithdrawHistory();
-    fetchWithdrawNotifications();
-    fetchLossHistory();
+    fetchUptime();
+    fetchDailyStats();
+    fetchTopPlayers();
+    fetchWeeklyRewards();
     setInterval(() => {
         if (!isLoggedIn) return;
         fetchDashboard();
+        fetchUptime();
+        fetchDailyStats();
         if (document.getElementById('tab-players').classList.contains('active')) fetchPlayers();
         if (document.getElementById('tab-history').classList.contains('active')) fetchHistory();
         if (document.getElementById('tab-transfer').classList.contains('active')) fetchTransfers();
-        if (document.getElementById('tab-withdraw').classList.contains('active')) {
-            fetchWithdrawals();
-            fetchWithdrawHistory();
-            fetchWithdrawNotifications();
-        }
-        if (document.getElementById('tab-loss').classList.contains('active')) fetchLossHistory();
+        if (document.getElementById('tab-top').classList.contains('active')) fetchTopPlayers();
+        if (document.getElementById('tab-rewards').classList.contains('active')) fetchWeeklyRewards();
     }, 15000);
     document.getElementById('statusText').textContent = '● ONLINE';
 }
