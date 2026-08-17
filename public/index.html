@@ -19,13 +19,128 @@
                 radial-gradient(ellipse at 20% 50%, rgba(255, 0, 150, 0.08) 0%, transparent 60%),
                 radial-gradient(ellipse at 80% 50%, rgba(255, 0, 200, 0.08) 0%, transparent 60%),
                 radial-gradient(ellipse at 50% 100%, rgba(255, 0, 150, 0.05) 0%, transparent 40%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
 
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #1a0015; }
         ::-webkit-scrollbar-thumb { background: #ff1493; border-radius: 3px; box-shadow: 0 0 15px #ff1493; }
 
-        .container { max-width: 1400px; margin: 0 auto; }
+        .container { max-width: 1400px; margin: 0 auto; width: 100%; }
+
+        /* ===== LOGIN SCREEN ===== */
+        .login-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 0, 8, 0.98);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(20px);
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .login-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(1.05);
+        }
+        .login-box {
+            background: rgba(20, 0, 15, 0.8);
+            border: 1px solid rgba(255, 20, 147, 0.3);
+            border-radius: 20px;
+            padding: 50px 45px;
+            max-width: 420px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(255, 20, 147, 0.15);
+            animation: floatIn 0.8s ease;
+        }
+        @keyframes floatIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .login-box .logo {
+            font-size: 48px;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .login-box h1 {
+            font-size: 24px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff1493, #ff6eb4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+        .login-box .sub {
+            color: #553344;
+            font-size: 13px;
+            letter-spacing: 3px;
+            margin-bottom: 30px;
+        }
+        .login-box .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .login-box .input-pink {
+            padding: 14px 18px;
+            background: rgba(20, 0, 15, 0.6);
+            border: 1px solid rgba(255, 20, 147, 0.15);
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.4s ease;
+            width: 100%;
+        }
+        .login-box .input-pink:focus {
+            border-color: #ff1493;
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.15);
+        }
+        .login-box .input-pink::placeholder { color: #553344; }
+        .login-box .btn-pink-solid {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #ff1493, #ff6eb4);
+            color: #0a0008;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            letter-spacing: 2px;
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.2);
+            margin-top: 10px;
+        }
+        .login-box .btn-pink-solid:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 50px rgba(255, 20, 147, 0.4);
+        }
+        .login-box .btn-pink-solid:active { transform: scale(0.97); }
+        .login-error {
+            color: #ff1493;
+            font-size: 13px;
+            margin-top: 12px;
+            min-height: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .login-error.show { opacity: 1; }
+        .login-box .footer-text {
+            color: #553344;
+            font-size: 11px;
+            margin-top: 20px;
+            letter-spacing: 1px;
+        }
+        .login-box .footer-text span { color: #ff1493; }
 
         /* ===== HEADER ===== */
         .header {
@@ -83,6 +198,22 @@
             font-size: 14px;
             font-weight: 400;
             letter-spacing: 2px;
+        }
+        .logout-btn {
+            padding: 6px 18px;
+            border: 1px solid rgba(255, 20, 147, 0.2);
+            border-radius: 20px;
+            background: transparent;
+            color: #885577;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .logout-btn:hover {
+            border-color: #ff1493;
+            color: #ff1493;
+            box-shadow: 0 0 20px rgba(255, 20, 147, 0.1);
         }
 
         /* ===== STATS ===== */
@@ -273,13 +404,6 @@
             font-weight: 700;
             border: 1px solid rgba(255, 110, 180, 0.2);
         }
-        .badge-win {
-            color: #ff1493;
-            font-weight: 700;
-        }
-        .badge-lose {
-            color: #ff6eb4;
-        }
 
         /* ===== INPUTS ===== */
         .input-group {
@@ -307,28 +431,6 @@
             background: rgba(20, 0, 15, 0.8);
         }
         .input-pink::placeholder { color: #553344; }
-
-        .btn-pink {
-            padding: 10px 28px;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(135deg, rgba(255, 20, 147, 0.3), rgba(255, 20, 147, 0.05));
-            color: #ff6eb4;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            border: 1px solid rgba(255, 20, 147, 0.15);
-            letter-spacing: 1px;
-        }
-        .btn-pink:hover {
-            background: linear-gradient(135deg, rgba(255, 20, 147, 0.4), rgba(255, 20, 147, 0.1));
-            box-shadow: 0 0 40px rgba(255, 20, 147, 0.2);
-            transform: translateY(-2px);
-            border-color: rgba(255, 20, 147, 0.4);
-        }
-        .btn-pink:active { transform: scale(0.97); }
 
         .btn-pink-solid {
             padding: 10px 28px;
@@ -398,16 +500,6 @@
         .auto-status span { color: #885577; }
         .auto-status .val { color: #ff6eb4; }
 
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            .header h1 { font-size: 20px; }
-            .stat-card .value { font-size: 20px; }
-            .card { padding: 16px; }
-            .tab-btn { padding: 8px 16px; font-size: 11px; }
-            .input-pink { min-width: 100%; }
-            .settings-row { grid-template-columns: 1fr; }
-        }
-
         /* ===== SEARCH BAR ===== */
         .search-bar {
             display: flex;
@@ -417,13 +509,42 @@
         }
         .search-bar .input-pink { flex: 2; min-width: 180px; }
 
-        /* Glow effect cho text */
-        .glow-pink { text-shadow: 0 0 20px rgba(255, 20, 147, 0.15); }
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .header h1 { font-size: 20px; }
+            .stat-card .value { font-size: 20px; }
+            .card { padding: 16px; }
+            .tab-btn { padding: 8px 16px; font-size: 11px; }
+            .input-pink { min-width: 100%; }
+            .settings-row { grid-template-columns: 1fr; }
+            .login-box { padding: 35px 25px; }
+            .login-box h1 { font-size: 20px; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
+<!-- ============================================================ -->
+<!--  LOGIN SCREEN -->
+<!-- ============================================================ -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+        <span class="logo">🌸</span>
+        <h1>KINGMC GAMBLING</h1>
+        <div class="sub">✦ NEON PANEL v2.0 ✦</div>
+        <div class="input-group">
+            <input type="password" id="loginPassword" class="input-pink" placeholder="🔑 Nhập mật khẩu..." onkeypress="if(event.key==='Enter') doLogin()">
+            <button class="btn-pink-solid" onclick="doLogin()">🔓 ĐĂNG NHẬP</button>
+        </div>
+        <div class="login-error" id="loginError">❌ Sai mật khẩu! Vui lòng thử lại.</div>
+        <div class="footer-text">🔒 <span>Bảo mật</span> • Chỉ Admin mới có quyền truy cập</div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!--  MAIN PANEL -->
+<!-- ============================================================ -->
+<div class="container" id="mainPanel" style="display:none;">
     <!-- HEADER -->
     <header class="header">
         <div>
@@ -435,6 +556,7 @@
             <span class="status-text" id="statusText">● ONLINE</span>
             <span style="color: #553344; margin: 0 8px;">|</span>
             <span class="status-text" id="totalGames" style="color: #885577;">PHIÊN: 0</span>
+            <button class="logout-btn" onclick="doLogout()">🚪 Đăng xuất</button>
         </div>
     </header>
 
@@ -602,16 +724,87 @@
 
 <script>
     // ============================================================
-    //  DATA
+    //  AUTHENTICATION
+    // ============================================================
+    const SESSION_PASSWORD = 'Z0N6Hz9UzGX';
+    let isLoggedIn = false;
+
+    async function doLogin() {
+        const password = document.getElementById('loginPassword').value;
+        const errorEl = document.getElementById('loginError');
+        
+        if (!password) {
+            errorEl.textContent = '🌸 Vui lòng nhập mật khẩu!';
+            errorEl.classList.add('show');
+            return;
+        }
+        
+        try {
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                isLoggedIn = true;
+                document.getElementById('loginOverlay').classList.add('hidden');
+                document.getElementById('mainPanel').style.display = 'block';
+                init();
+            } else {
+                errorEl.textContent = '❌ Sai mật khẩu! Vui lòng thử lại.';
+                errorEl.classList.add('show');
+                document.getElementById('loginPassword').value = '';
+                document.getElementById('loginPassword').focus();
+            }
+        } catch (e) {
+            errorEl.textContent = '❌ Lỗi kết nối! Vui lòng thử lại.';
+            errorEl.classList.add('show');
+        }
+    }
+
+    async function doLogout() {
+        if (!confirm('🌸 Bạn có chắc muốn đăng xuất?')) return;
+        try {
+            await fetch('/api/logout', { method: 'POST' });
+            isLoggedIn = false;
+            document.getElementById('loginOverlay').classList.remove('hidden');
+            document.getElementById('mainPanel').style.display = 'none';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('loginError').classList.remove('show');
+        } catch (e) {
+            alert('❌ Lỗi đăng xuất!');
+        }
+    }
+
+    // Kiểm tra trạng thái đăng nhập khi load
+    async function checkAuth() {
+        try {
+            const res = await fetch('/api/check-auth');
+            const data = await res.json();
+            if (data.authenticated) {
+                isLoggedIn = true;
+                document.getElementById('loginOverlay').classList.add('hidden');
+                document.getElementById('mainPanel').style.display = 'block';
+                init();
+            } else {
+                document.getElementById('loginOverlay').classList.remove('hidden');
+                document.getElementById('mainPanel').style.display = 'none';
+            }
+        } catch (e) {
+            document.getElementById('loginOverlay').classList.remove('hidden');
+            document.getElementById('mainPanel').style.display = 'none';
+        }
+    }
+
+    // ============================================================
+    //  DATA & FUNCTIONS (GIỮ NGUYÊN)
     // ============================================================
     let playersData = [];
     let historyData = [];
     let transferData = [];
-    let autoData = {};
 
-    // ============================================================
-    //  FUNCTIONS
-    // ============================================================
     function switchTab(tab) {
         document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -855,6 +1048,7 @@
         fetchHistory();
         fetchTransfers();
         setInterval(() => {
+            if (!isLoggedIn) return;
             fetchDashboard();
             if (document.getElementById('tab-players').classList.contains('active')) fetchPlayers();
             if (document.getElementById('tab-history').classList.contains('active')) fetchHistory();
@@ -863,7 +1057,16 @@
         document.getElementById('statusText').textContent = '● ONLINE';
     }
 
-    init();
+    // ============================================================
+    //  START
+    // ============================================================
+    // Kiểm tra đăng nhập khi load
+    checkAuth();
+
+    // Cho phép Enter để login
+    document.getElementById('loginPassword').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') doLogin();
+    });
 </script>
 </body>
 </html>
