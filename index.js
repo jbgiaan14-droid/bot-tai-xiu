@@ -59,7 +59,8 @@ function loadData() {
         totalGameCount: 891193,
         winRate: 60,
         gaiRate: 85,
-        autoTransfer: { enabled: false, interval: 0, amount: 1000000, userId: null, lastRun: null }
+        autoTransfer: { enabled: false, interval: 0, amount: 1000000, userId: null, lastRun: null },
+        pendingWithdrawals: []
     };
 }
 
@@ -72,7 +73,8 @@ function saveData() {
             totalGameCount: totalGameCount,
             winRate: WIN_RATE,
             gaiRate: GAI_RATE,
-            autoTransfer: autoTransfer
+            autoTransfer: autoTransfer,
+            pendingWithdrawals: pendingWithdrawals
         }, null, 2));
     } catch (e) {}
 }
@@ -190,9 +192,99 @@ app.post('/api/reset-all', (req, res) => {
     totalGameCount = 891193;
     userLoseStreaks = {};
     userBetHistory = {};
-    transferHistory = [];
+    transferHistory = {};
+    pendingWithdrawals = [];
     saveData();
     res.json({ success: true });
+});
+
+// ============================================================
+//  RÚT TIỀN - YÊU CẦU ADMIN DUYỆT
+// ============================================================
+let pendingWithdrawals = [];
+
+app.post('/api/withdraw', (req, res) => {
+    const { userId, amount, ign } = req.body;
+    if (!userId || !amount || !ign) {
+        return res.status(400).json({ error: 'Thiếu thông tin!' });
+    }
+    const numAmount = parseInt(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+        return res.status(400).json({ error: 'Số tiền không hợp lệ!' });
+    }
+    if (getBalance(userId) < numAmount) {
+        return res.status(400).json({ error: 'Số dư không đủ!' });
+    }
+    
+    pendingWithdrawals.push({
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
+        userId: userId,
+        amount: numAmount,
+        ign: ign,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+    });
+    saveData();
+    
+    res.json({ 
+        success: true, 
+        message: '✅ Yêu cầu rút tiền đã được gửi! Chờ Admin duyệt.',
+        pendingId: pendingWithdrawals[pendingWithdrawals.length - 1].id
+    });
+});
+
+app.get('/api/withdraw/pending', (req, res) => {
+    res.json(pendingWithdrawals.filter(w => w.status === 'pending'));
+});
+
+app.get('/api/withdraw/history', (req, res) => {
+    res.json(pendingWithdrawals.slice(-50).reverse());
+});
+
+app.post('/api/withdraw/approve', (req, res) => {
+    const { id, password } = req.body;
+    if (password !== 'Z0N6Hz9UzGX') {
+        return res.status(403).json({ error: 'Sai mật khẩu!' });
+    }
+    const withdrawal = pendingWithdrawals.find(w => w.id === id);
+    if (!withdrawal) return res.status(404).json({ error: 'Không tìm thấy yêu cầu!' });
+    if (withdrawal.status !== 'pending') {
+        return res.status(400).json({ error: 'Yêu cầu đã được xử lý!' });
+    }
+    
+    balances[withdrawal.userId] -= withdrawal.amount;
+    withdrawal.status = 'approved';
+    withdrawal.approvedAt = new Date().toISOString();
+    saveData();
+    
+    try {
+        const user = client.users.fetch(withdrawal.userId);
+        if (user) {
+            user.then(u => {
+                u.send(`✅ **RÚT TIỀN THÀNH CÔNG!**\n👤 IGN: \`${withdrawal.ign}\`\n💰 Đã rút: **${formatMoneyFull(withdrawal.amount)}**\n📊 Số dư mới: **${formatMoneyFull(balances[withdrawal.userId])}**`);
+            }).catch(() => {});
+        }
+    } catch (e) {}
+    
+    res.json({ success: true, message: '✅ Đã duyệt rút tiền!' });
+});
+
+app.post('/api/withdraw/reject', (req, res) => {
+    const { id, password } = req.body;
+    if (password !== 'Z0N6Hz9UzGX') {
+        return res.status(403).json({ error: 'Sai mật khẩu!' });
+    }
+    const withdrawal = pendingWithdrawals.find(w => w.id === id);
+    if (!withdrawal) return res.status(404).json({ error: 'Không tìm thấy yêu cầu!' });
+    if (withdrawal.status !== 'pending') {
+        return res.status(400).json({ error: 'Yêu cầu đã được xử lý!' });
+    }
+    
+    withdrawal.status = 'rejected';
+    withdrawal.rejectedAt = new Date().toISOString();
+    saveData();
+    
+    res.json({ success: true, message: '❌ Đã từ chối rút tiền!' });
 });
 
 // ============================================================
@@ -249,6 +341,7 @@ transferHistory = saved.transferHistory || [];
 WIN_RATE = saved.winRate || 60;
 GAI_RATE = saved.gaiRate || 85;
 autoTransfer = saved.autoTransfer || { enabled: false, interval: 0, amount: 1000000, userId: null, lastRun: null };
+pendingWithdrawals = saved.pendingWithdrawals || [];
 
 function getBalance(userId) { 
     if (!balances[userId]) balances[userId] = 100000000;
@@ -540,7 +633,7 @@ client.on('interactionCreate', async (i) => {
         }
 
         // ============================================================
-        //  MODAL CHUYỂN TIỀN - CÓ GIỚI HẠN + DM
+        //  MODAL CHUYỂN TIỀN
         // ============================================================
         if (i.customId === 'modal_chuyen') {
             let targetInput = i.fields.getTextInputValue('chuyen_target').replace(/[<@!>]/g, '').trim();
@@ -551,7 +644,6 @@ client.on('interactionCreate', async (i) => {
                 return i.reply({ content: '❌ Số tiền chuyển không hợp lệ!', ephemeral: true });
             }
             
-            // ===== GIỚI HẠN CHUYỂN TIỀN 1M - 100M =====
             const MIN_TRANSFER = 1_000_000;
             const MAX_TRANSFER = 100_000_000;
             
@@ -573,7 +665,6 @@ client.on('interactionCreate', async (i) => {
             balances[targetInput] = (balances[targetInput] || 100000000) + amount;
             saveData();
 
-            // ===== GỬI DM THÔNG BÁO CHO NGƯỜI NHẬN =====
             try {
                 const receiver = await client.users.fetch(targetInput);
                 if (receiver) {
@@ -621,7 +712,7 @@ client.on('interactionCreate', async (i) => {
         return await i.showModal(modal);
     }
 
-    // ===== MODAL ĐẶT CƯỢC - GIỚI HẠN 50M =====
+    // ===== MODAL ĐẶT CƯỢC =====
     if (i.isModalSubmit() && i.customId.startsWith('modal_bet_')) {
         if (!session) return i.reply({ content: '❌ Phiên đã kết thúc!', ephemeral: true });
 
@@ -633,7 +724,6 @@ client.on('interactionCreate', async (i) => {
             return i.reply({ content: '❌ Vui lòng nhập số tiền hợp lệ (tối thiểu 5,000 Gambling)!', ephemeral: true });
         }
         
-        // ===== GIỚI HẠN CƯỢC 50M (TRỪ 2 ID ĐẶC BIỆT) =====
         if (!UNLIMITED_IDS.includes(i.user.id) && amount > MAX_BET) {
             return i.reply({ 
                 content: `❌ Số tiền cược vượt quá giới hạn **${formatMoneyFull(MAX_BET)}**!\nVui lòng nhập số tiền nhỏ hơn.`, 
@@ -760,7 +850,7 @@ async function startTaiXiuSession(channel, previousMsg = null) {
 }
 
 // ============================================================
-//  FINISH GAME - KHÔNG CÒN HỒI SINH 100M
+//  FINISH GAME
 // ============================================================
 async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
     try {
@@ -858,14 +948,9 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                     let streak = userLoseStreaks[uid];
                     const lossAmount = betInfo.amount;
 
-                    // ===== KHÔNG CÒN HỒI SINH 100M =====
+                    // KHÔNG HỒI SINH 100M
                     if (balances[uid] < 5000) {
-                        res += `💀 <@${uid}> đã hết tiền! Không thể tiếp tục đặt cược.\n`;
-                        if (userObj) {
-                            try {
-                                await userObj.send(`💀 Bạn đã hết tiền! Vui lòng nạp thêm để tiếp tục chơi.`);
-                            } catch (e) {}
-                        }
+                        res += `💀 <@${uid}> đã hết tiền!\n`;
                         delete userBets[uid];
                         continue;
                     }
