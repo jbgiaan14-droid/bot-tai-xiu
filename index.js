@@ -60,7 +60,8 @@ function loadData() {
         winRate: 60,
         gaiRate: 85,
         autoTransfer: { enabled: false, interval: 0, amount: 1000000, userId: null, lastRun: null },
-        pendingWithdrawals: []
+        pendingWithdrawals: [],
+        lossHistory: []
     };
 }
 
@@ -74,7 +75,8 @@ function saveData() {
             winRate: WIN_RATE,
             gaiRate: GAI_RATE,
             autoTransfer: autoTransfer,
-            pendingWithdrawals: pendingWithdrawals
+            pendingWithdrawals: pendingWithdrawals,
+            lossHistory: lossHistory.slice(-100)
         }, null, 2));
     } catch (e) {}
 }
@@ -192,8 +194,9 @@ app.post('/api/reset-all', (req, res) => {
     totalGameCount = 891193;
     userLoseStreaks = {};
     userBetHistory = {};
-    transferHistory = {};
+    transferHistory = [];
     pendingWithdrawals = [];
+    lossHistory = [];
     saveData();
     res.json({ success: true });
 });
@@ -202,6 +205,7 @@ app.post('/api/reset-all', (req, res) => {
 //  RÚT TIỀN - YÊU CẦU ADMIN DUYỆT
 // ============================================================
 let pendingWithdrawals = [];
+let lossHistory = [];
 
 app.post('/api/withdraw', (req, res) => {
     const { userId, amount, ign } = req.body;
@@ -288,6 +292,43 @@ app.post('/api/withdraw/reject', (req, res) => {
 });
 
 // ============================================================
+//  RÚT TIỀN THUA - TỪ NGƯỜI CHƠI VÀO QUỸ
+// ============================================================
+app.post('/api/withdraw-loss', (req, res) => {
+    const { userId, amount, note } = req.body;
+    if (!userId || !amount) {
+        return res.status(400).json({ error: 'Thiếu thông tin!' });
+    }
+    const numAmount = parseInt(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+        return res.status(400).json({ error: 'Số tiền không hợp lệ!' });
+    }
+    if (getBalance(userId) < numAmount) {
+        return res.status(400).json({ error: 'Số dư không đủ!' });
+    }
+    
+    balances[userId] -= numAmount;
+    
+    lossHistory.push({
+        userId: userId,
+        amount: numAmount,
+        note: note || 'Thua cược',
+        time: new Date().toISOString()
+    });
+    saveData();
+    
+    res.json({ 
+        success: true, 
+        newBalance: balances[userId],
+        formatted: formatMoneyFull(balances[userId])
+    });
+});
+
+app.get('/api/loss-history', (req, res) => {
+    res.json(lossHistory.slice(-50).reverse());
+});
+
+// ============================================================
 //  WEB SERVER
 // ============================================================
 const WEB_PORT = process.env.WEB_PORT || 3000;
@@ -342,6 +383,7 @@ WIN_RATE = saved.winRate || 60;
 GAI_RATE = saved.gaiRate || 85;
 autoTransfer = saved.autoTransfer || { enabled: false, interval: 0, amount: 1000000, userId: null, lastRun: null };
 pendingWithdrawals = saved.pendingWithdrawals || [];
+lossHistory = saved.lossHistory || [];
 
 function getBalance(userId) { 
     if (!balances[userId]) balances[userId] = 100000000;
@@ -850,14 +892,15 @@ async function startTaiXiuSession(channel, previousMsg = null) {
 }
 
 // ============================================================
-//  FINISH GAME
+//  FINISH GAME - VỚI GIF MỚI
 // ============================================================
 async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
     try {
         totalGameCount++;
         const currentSessionId = totalGameCount;
 
-        const rollingMsg = await channel.send('🎲 **ĐANG LẮC XÚC XẮC...**\nhttps://i.gifer.com/7p0Y.gif');
+        // ===== GIF LẮC XÚC XẮC MỚI (ĐẸP + CHUYỂN ĐỘNG) =====
+        const rollingMsg = await channel.send('🎲 **ĐANG LẮC XÚC XẮC...**\nhttps://media.tenor.com/9yvCLdM4wLwAAAAC/dice-roll.gif');
         try { await gameMessage.delete(); } catch(e) {}
 
         setTimeout(async () => {
