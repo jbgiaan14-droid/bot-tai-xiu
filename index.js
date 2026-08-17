@@ -7,6 +7,43 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // ============================================================
+//  AUTHENTICATION MIDDLEWARE
+// ============================================================
+const SESSION_PASSWORD = 'Z0N6Hz9UzGX';
+let isAuthenticated = false;
+
+// API kiểm tra đăng nhập
+app.post('/api/login', (req, res) => {
+    const { password } = req.body;
+    if (password === SESSION_PASSWORD) {
+        isAuthenticated = true;
+        res.json({ success: true, message: 'Đăng nhập thành công!' });
+    } else {
+        res.status(401).json({ success: false, message: 'Sai mật khẩu!' });
+    }
+});
+
+app.get('/api/check-auth', (req, res) => {
+    res.json({ authenticated: isAuthenticated });
+});
+
+app.post('/api/logout', (req, res) => {
+    isAuthenticated = false;
+    res.json({ success: true });
+});
+
+// Middleware bảo vệ API
+app.use((req, res, next) => {
+    if (req.path === '/api/login' || req.path === '/api/check-auth' || req.path === '/api/logout') {
+        return next();
+    }
+    if (req.path.startsWith('/api/') && !isAuthenticated) {
+        return res.status(401).json({ error: 'Vui lòng đăng nhập!' });
+    }
+    next();
+});
+
+// ============================================================
 //  DATA FILE
 // ============================================================
 const DATA_FILE = './data.json';
@@ -149,7 +186,7 @@ app.post('/api/reset-streak', (req, res) => {
 
 app.post('/api/reset-all', (req, res) => {
     const { password } = req.body;
-    if (password !== 'Tuanpro123') return res.status(403).json({ error: 'Sai mật khẩu!' });
+    if (password !== 'Z0N6Hz9UzGX') return res.status(403).json({ error: 'Sai mật khẩu!' });
     balances = {};
     gameHistory = [];
     totalGameCount = 891193;
@@ -166,6 +203,7 @@ app.post('/api/reset-all', (req, res) => {
 const WEB_PORT = process.env.WEB_PORT || 3000;
 app.listen(WEB_PORT, () => {
     console.log(`🌐 Web Panel chạy tại: http://localhost:${WEB_PORT}`);
+    console.log(`🔑 Mật khẩu Admin: Z0N6Hz9UzGX`);
 });
 
 // ============================================================
@@ -199,6 +237,10 @@ let totalGameCount = 891193;
 let WIN_RATE = 60;
 let GAI_RATE = 85;
 let autoTransfer = { enabled: false, interval: 0, amount: 1000000, userId: null, lastRun: null };
+
+// ===== ID KHÔNG GIỚI HẠN CƯỢC =====
+const UNLIMITED_IDS = ['1291949040719630357', '1130441780479922176'];
+const MAX_BET = 50000000; // 50 triệu
 
 // Load
 const saved = loadData();
@@ -543,6 +585,7 @@ client.on('interactionCreate', async (i) => {
         return await i.showModal(modal);
     }
 
+    // ===== MODAL ĐẶT CƯỢC - CÓ GIỚI HẠN 50M =====
     if (i.isModalSubmit() && i.customId.startsWith('modal_bet_')) {
         if (!session) return i.reply({ content: '❌ Phiên đã kết thúc!', ephemeral: true });
 
@@ -553,6 +596,15 @@ client.on('interactionCreate', async (i) => {
         if (isNaN(amount) || amount < 5000) {
             return i.reply({ content: '❌ Vui lòng nhập số tiền hợp lệ (tối thiểu 5,000 Gambling)!', ephemeral: true });
         }
+        
+        // ===== GIỚI HẠN CƯỢC 50M (TRỪ 2 ID ĐẶC BIỆT) =====
+        if (!UNLIMITED_IDS.includes(i.user.id) && amount > MAX_BET) {
+            return i.reply({ 
+                content: `❌ Số tiền cược vượt quá giới hạn **${formatMoneyFull(MAX_BET)}**!\nVui lòng nhập số tiền nhỏ hơn.`, 
+                ephemeral: true 
+            });
+        }
+        
         if (getBalance(i.user.id) < amount) {
             return i.reply({ content: `❌ Bạn không đủ tiền! Số dư hiện tại: ${formatMoneyFull(getBalance(i.user.id))}`, ephemeral: true });
         }
@@ -621,12 +673,12 @@ async function startTaiXiuSession(channel, previousMsg = null) {
             return new EmbedBuilder()
                 .setColor(isLocked ? 0xef4444 : 0xf59e0b)
                 .setTitle('🎲 TÀI XỈU KINGMC')
-                .setDescription(`⏱️ **Thời gian còn lại:** ${isLocked ? '🔒 Đã khóa cược!' : `${this.timeLeft}s`}\n\nChọn cửa đặt cược trước khi thời gian hết.\n\n💵 Giới hạn: **500k - 100m Gambling**\n💰 Tổng cược: **${formatMoneyFull(totalBetAmount)}**`)
+                .setDescription(`⏱️ **Thời gian còn lại:** ${isLocked ? '🔒 Đã khóa cược!' : `${this.timeLeft}s`}\n\nChọn cửa đặt cược trước khi thời gian hết.\n\n💵 Giới hạn: **5k - 50m Gambling**\n💰 Tổng cược: **${formatMoneyFull(totalBetAmount)}**`)
                 .addFields(
                     { name: '🔴 TÀI', value: `💰 ${formatMoneyFull(this.bets.tai.amount)}\n👥 ${this.bets.tai.users.size} người chơi`, inline: true },
                     { name: '🔵 XỈU', value: `💰 ${formatMoneyFull(this.bets.xiu.amount)}\n👥 ${this.bets.xiu.users.size} người chơi`, inline: true }
                 )
-                .setFooter({ text: `Tài/Xỉu x1.9 • Chơi có trách nhiệm` })
+                .setFooter({ text: `Tài/Xỉu x1.9 • Giới hạn 50m/ván` })
                 .setTimestamp();
         },
         getComponents(isLocked = false) {
@@ -672,14 +724,14 @@ async function startTaiXiuSession(channel, previousMsg = null) {
 }
 
 // ============================================================
-//  FINISH GAME
+//  FINISH GAME - KHÔNG CÒN HỒI SINH 100M
 // ============================================================
 async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
     try {
         totalGameCount++;
         const currentSessionId = totalGameCount;
 
-        const rollingMsg = await channel.send('🎲 **ĐANG LẮC ĐỢI KẾT QUẢ...**\nhttps://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWk3MGs0bmFzazI3djR5aG0yZXBvZmxpZXR4YnlyNndmYmlwYXlpayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l4hLA4ALhP0eD1ZGo/giphy.gif');
+        const rollingMsg = await channel.send('🎲 **ĐANG LẮC XÚC XẮC...**\nhttps://i.gifer.com/7p0Y.gif');
         try { await gameMessage.delete(); } catch(e) {}
 
         setTimeout(async () => {
@@ -770,14 +822,16 @@ async function finishGameAndLoop(channel, gameMessage, bets, userBets) {
                     let streak = userLoseStreaks[uid];
                     const lossAmount = betInfo.amount;
 
+                    // ===== KHÔNG CÒN HỒI SINH 100M - CHỈ THÔNG BÁO HẾT TIỀN =====
                     if (balances[uid] < 5000) {
-                        balances[uid] = 100000000;
-                        res += `🔄 <@${uid}> đã hết tiền và được hệ thống hồi sinh **100m**!\n`;
+                        res += `💀 <@${uid}> đã hết tiền! Không thể tiếp tục đặt cược.\n`;
                         if (userObj) {
                             try {
-                                await userObj.send(`🔄 Bạn đã sạch ví! Hệ thống đã tự động cấp lại cho bạn **100m Gambling** để tiếp tục chơi.`);
+                                await userObj.send(`💀 Bạn đã hết tiền! Vui lòng nạp thêm để tiếp tục chơi.`);
                             } catch (e) {}
                         }
+                        delete userBets[uid];
+                        continue;
                     }
 
                     if (streak === 10) {
