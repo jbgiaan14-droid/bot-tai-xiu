@@ -1698,3 +1698,287 @@ async function finishBauCuaGame(channel, gameMessage, bets, userBets, totalBets)
 //  START BOT
 // ============================================================
 client.login(BOT_TOKEN);
+// ============================================================
+//  TÍNH NĂNG MỚI - WEB PANEL API
+// ============================================================
+
+// ===== 1. THÔNG BÁO ĐẨY (DM) =====
+app.post('/api/announce/dm', async (req, res) => {
+    const { userId, message, password } = req.body;
+    if (password !== 'Z0N6Hz9UzGX') return res.status(403).json({ error: 'Sai mật khẩu!' });
+    if (!message) return res.status(400).json({ error: 'Thiếu nội dung!' });
+    
+    try {
+        if (userId) {
+            // Gửi cho 1 người
+            const user = await client.users.fetch(userId);
+            if (user) {
+                await user.send(`📢 **THÔNG BÁO TỪ ADMIN**\n\n${message}`);
+                res.json({ success: true, message: 'Đã gửi thông báo cho 1 người!' });
+            } else {
+                res.status(404).json({ error: 'Không tìm thấy người chơi!' });
+            }
+        } else {
+            // Gửi cho tất cả
+            let sent = 0;
+            const allUsers = Object.keys(balances);
+            for (const uid of allUsers) {
+                try {
+                    const user = await client.users.fetch(uid);
+                    if (user) {
+                        await user.send(`📢 **THÔNG BÁO TỪ ADMIN**\n\n${message}`);
+                        sent++;
+                    }
+                } catch (e) {}
+                // Tránh rate limit
+                await new Promise(r => setTimeout(r, 100));
+            }
+            res.json({ success: true, message: `Đã gửi thông báo cho ${sent} người chơi!` });
+        }
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ===== 2. THỐNG KÊ CHI TIẾT THEO NGƯỜI CHƠI =====
+app.get('/api/player/stats/:userId', (req, res) => {
+    const { userId } = req.params;
+    const userHistory = gameHistory.filter(g => g.userId === userId);
+    const wins = userHistory.filter(g => g.side === g.winSide).length;
+    const losses = userHistory.length - wins;
+    const totalBet = userHistory.reduce((sum, g) => sum + (g.totalBet || 0), 0);
+    const totalWin = userHistory.filter(g => g.side === g.winSide).reduce((sum, g) => sum + (g.totalBet || 0), 0);
+    const totalLose = userHistory.filter(g => g.side !== g.winSide).reduce((sum, g) => sum + (g.totalBet || 0), 0);
+    
+    res.json({
+        userId,
+        totalGames: userHistory.length,
+        wins,
+        losses,
+        winRate: userHistory.length > 0 ? Math.round((wins / userHistory.length) * 100) : 0,
+        totalBet,
+        totalWin,
+        totalLose,
+        profit: totalWin - totalLose,
+        balance: balances[userId] || 0,
+        history: userHistory.slice(-20).reverse()
+    });
+});
+
+// ===== 3. LỊCH SỬ GIAO DỊCH CHI TIẾT =====
+app.get('/api/transactions', (req, res) => {
+    const { userId, limit = 50, type } = req.query;
+    let transactions = [];
+    
+    // Gom tất cả giao dịch
+    const deposits = depositHistory.map(d => ({ ...d, type: 'nạp' }));
+    const transfers = transferHistory.map(t => ({ ...t, type: 'chuyển' }));
+    const withdrawals = pendingWithdrawals.filter(w => w.status === 'approved').map(w => ({ ...w, type: 'rút' }));
+    
+    transactions = [...deposits, ...transfers, ...withdrawals];
+    
+    // Lọc theo userId
+    if (userId) {
+        transactions = transactions.filter(t => t.userId === userId || t.to === userId);
+    }
+    // Lọc theo type
+    if (type) {
+        transactions = transactions.filter(t => t.type === type);
+    }
+    
+    transactions.sort((a, b) => new Date(b.time || b.createdAt) - new Date(a.time || a.createdAt));
+    res.json(transactions.slice(0, parseInt(limit)));
+});
+
+// ===== 4. CẢNH BÁO CHUỖI THUA =====
+app.get('/api/alerts/lose-streak', (req, res) => {
+    const alerts = [];
+    for (const [uid, streak] of Object.entries(userLoseStreaks)) {
+        if (streak >= 7) {
+            alerts.push({
+                userId: uid,
+                streak: streak,
+                balance: balances[uid] || 0,
+                level: streak >= 10 ? 'critical' : streak >= 8 ? 'high' : 'warning'
+            });
+        }
+    }
+    alerts.sort((a, b) => b.streak - a.streak);
+    res.json(alerts);
+});
+
+// ===== 5. BXH MỞ RỘNG =====
+app.get('/api/leaderboard', (req, res) => {
+    const { type = 'balance', limit = 10 } = req.query;
+    let sorted = [];
+    
+    if (type === 'balance') {
+        sorted = Object.entries(balances).sort((a, b) => b[1] - a[1]);
+    } else if (type === 'wins') {
+        sorted = Object.entries(userWins).sort((a, b) => b[1] - a[1]);
+    } else if (type === 'winrate') {
+        const stats = {};
+        const allUsers = new Set([...Object.keys(userWins), ...Object.keys(userLosses)]);
+        for (const uid of allUsers) {
+            const wins = userWins[uid] || 0;
+            const losses = userLosses[uid] || 0;
+            const total = wins + losses;
+            stats[uid] = { wins, losses, winRate: total > 0 ? Math.round((wins / total) * 100) : 0 };
+        }
+        sorted = Object.entries(stats).sort((a, b) => b[1].winRate - a[1].winRate);
+    } else if (type === 'games') {
+        const games = {};
+        gameHistory.forEach(g => {
+            if (g.userId) games[g.userId] = (games[g.userId] || 0) + 1;
+        });
+        sorted = Object.entries(games).sort((a, b) => b[1] - a[1]);
+    }
+    
+    const result = sorted.slice(0, parseInt(limit)).map(([uid, value]) => {
+        let username = 'Unknown';
+        try {
+            const user = client.users.fetch(uid).catch(() => null);
+            if (user) username = user.username;
+        } catch (e) {}
+        return { userId: uid, username, value, display: typeof value === 'object' ? value : { value } };
+    });
+    res.json(result);
+});
+
+// ===== 6. BLACKLIST =====
+let blacklist = {};
+
+app.get('/api/blacklist', (req, res) => {
+    res.json(blacklist);
+});
+
+app.post('/api/blacklist/add', (req, res) => {
+    const { userId, reason, password } = req.body;
+    if (password !== 'Z0N6Hz9UzGX') return res.status(403).json({ error: 'Sai mật khẩu!' });
+    if (!userId) return res.status(400).json({ error: 'Thiếu userId!' });
+    
+    blacklist[userId] = {
+        reason: reason || 'Không có lý do',
+        time: new Date().toISOString(),
+        admin: 'Admin'
+    };
+    saveData();
+    res.json({ success: true, blacklist });
+});
+
+app.post('/api/blacklist/remove', (req, res) => {
+    const { userId, password } = req.body;
+    if (password !== 'Z0N6Hz9UzGX') return res.status(403).json({ error: 'Sai mật khẩu!' });
+    if (!userId) return res.status(400).json({ error: 'Thiếu userId!' });
+    
+    delete blacklist[userId];
+    saveData();
+    res.json({ success: true, blacklist });
+});
+
+// ===== 7. EXPORT CSV =====
+app.get('/api/export/csv', (req, res) => {
+    const { type } = req.query;
+    let headers = [];
+    let rows = [];
+    
+    if (type === 'players') {
+        headers = ['Discord ID', 'Username', 'IGN', 'Số dư', 'Chuỗi thua'];
+        const sorted = Object.entries(balances).sort((a, b) => b[1] - a[1]);
+        rows = sorted.map(([id, bal]) => {
+            let username = 'Unknown', ign = 'Chưa liên kết';
+            for (const [ignKey, discordId] of Object.entries(ignToDiscordMap)) {
+                if (discordId === id) { ign = ignKey; break; }
+            }
+            return [id, username, ign, bal, userLoseStreaks[id] || 0];
+        });
+    } else if (type === 'history') {
+        headers = ['Phiên', 'Xúc xắc', 'Tổng', 'Cửa thắng'];
+        rows = gameHistory.slice(-100).map(h => [
+            h.id || 'N/A',
+            `${h.dice1}-${h.dice2}-${h.dice3}`,
+            h.total,
+            h.side === 'tai' ? 'TÀI' : 'XỈU'
+        ]);
+    } else {
+        return res.status(400).json({ error: 'Type không hợp lệ!' });
+    }
+    
+    let csv = headers.join(',') + '\n';
+    rows.forEach(row => {
+        csv += row.join(',') + '\n';
+    });
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=${type}_${Date.now()}.csv`);
+    res.send(csv);
+});
+
+// ===== 8. GHI CHÚ NÂNG CAO =====
+// Đã có playerNotes, thêm phân loại
+let playerNotesPublic = {};
+let playerNotesPrivate = {};
+
+app.post('/api/player/note/advanced', (req, res) => {
+    const { userId, note, type, password } = req.body;
+    if (password !== 'Z0N6Hz9UzGX') return res.status(403).json({ error: 'Sai mật khẩu!' });
+    if (!userId) return res.status(400).json({ error: 'Thiếu userId!' });
+    
+    if (type === 'public') {
+        playerNotesPublic[userId] = { note, time: new Date().toISOString() };
+    } else {
+        playerNotesPrivate[userId] = { note, time: new Date().toISOString() };
+    }
+    saveData();
+    res.json({ success: true });
+});
+
+app.get('/api/player/note/advanced/:userId', (req, res) => {
+    const { userId } = req.params;
+    res.json({
+        public: playerNotesPublic[userId] || null,
+        private: playerNotesPrivate[userId] || null
+    });
+});
+
+// ===== 9. THÊM/TRỪ TIỀN NGƯỜI CHƠI =====
+app.post('/api/player/adjust-balance', (req, res) => {
+    const { userId, amount, note, password } = req.body;
+    if (password !== 'Z0N6Hz9UzGX') return res.status(403).json({ error: 'Sai mật khẩu!' });
+    if (!userId) return res.status(400).json({ error: 'Thiếu userId!' });
+    const numAmount = parseInt(amount);
+    if (isNaN(numAmount) || numAmount === 0) return res.status(400).json({ error: 'Số tiền không hợp lệ!' });
+    
+    balances[userId] = (balances[userId] || 100000000) + numAmount;
+    if (balances[userId] < 0) balances[userId] = 0;
+    
+    transferHistory.push({
+        to: userId,
+        amount: numAmount,
+        note: note || (numAmount > 0 ? 'Admin cộng' : 'Admin trừ'),
+        time: new Date().toISOString(),
+        from: 'Admin'
+    });
+    saveData();
+    
+    res.json({ 
+        success: true, 
+        newBalance: balances[userId],
+        formatted: formatMoneyFull(balances[userId])
+    });
+});
+
+// ===== CẬP NHẬT LOADDATA VÀ SAVEDATA =====
+// THÊM VÀO loadData():
+/*
+blacklist: {},
+playerNotesPublic: {},
+playerNotesPrivate: {}
+*/
+
+// THÊM VÀO saveData():
+/*
+blacklist: blacklist,
+playerNotesPublic: playerNotesPublic,
+playerNotesPrivate: playerNotesPrivate
+*/
