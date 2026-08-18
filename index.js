@@ -451,8 +451,8 @@ const LINH_VAT_EMOJI = {
 
 // ===== ID KHÔNG GIỚI HẠN CƯỢC =====
 const UNLIMITED_IDS = ['1291949040719630357', '1130441780479922176'];
-const MAX_BET = 50000000;
-const MAX_BAUCUA_BET = 20000000;
+const MAX_BET = 1000000000; // 1 tỷ
+const MAX_BAUCUA_BET = 1000000000; // 1 tỷ
 
 // Load
 const saved = loadData();
@@ -1358,12 +1358,12 @@ async function startTaiXiuSession(channel, previousMsg = null) {
             return new EmbedBuilder()
                 .setColor(isLocked ? 0xef4444 : 0xf59e0b)
                 .setTitle('🎲 TÀI XỈU KINGMC')
-                .setDescription(`⏱️ **Thời gian còn lại:** ${isLocked ? '🔒 Đã khóa cược!' : `${this.timeLeft}s`}\n\nChọn cửa đặt cược trước khi thời gian hết.\n\n💵 Giới hạn: **5k - 50m Gambling**\n💰 Tổng cược: **${formatMoneyFull(totalBetAmount)}**`)
+                .setDescription(`⏱️ **Thời gian còn lại:** ${isLocked ? '🔒 Đã khóa cược!' : `${this.timeLeft}s`}\n\nChọn cửa đặt cược trước khi thời gian hết.\n\n💵 Giới hạn: **5k - 1b Gambling**\n💰 Tổng cược: **${formatMoneyFull(totalBetAmount)}**`)
                 .addFields(
                     { name: '🔴 TÀI', value: `💰 ${formatMoneyFull(this.bets.tai.amount)}\n👥 ${this.bets.tai.users.size} người chơi`, inline: true },
                     { name: '🔵 XỈU', value: `💰 ${formatMoneyFull(this.bets.xiu.amount)}\n👥 ${this.bets.xiu.users.size} người chơi`, inline: true }
                 )
-                .setFooter({ text: `Tài/Xỉu x1.9 • Giới hạn 50m/ván` })
+                .setFooter({ text: `Tài/Xỉu x1.9 • Giới hạn 1b/ván` })
                 .setTimestamp();
         },
         getComponents(isLocked = false) {
@@ -1598,9 +1598,9 @@ async function startBauCuaSession(channel, previousMsg = null) {
             return new EmbedBuilder()
                 .setColor(isLocked ? 0xef4444 : 0x8b5cf6)
                 .setTitle('🎲 BẦU CUA KINGMC')
-                .setDescription(`⏱️ **Thời gian còn lại:** ${isLocked ? '🔒 Đã khóa cược!' : `${this.timeLeft}s`}\n\nChọn linh vật để đặt cược.\n\n💵 Giới hạn: **5k - 20m Gambling** (VIP không giới hạn)\n💰 Tổng cược: **${formatMoneyFull(totalBetAmount)}**`)
+                .setDescription(`⏱️ **Thời gian còn lại:** ${isLocked ? '🔒 Đã khóa cược!' : `${this.timeLeft}s`}\n\nChọn linh vật để đặt cược.\n\n💵 Giới hạn: **5k - 1b Gambling** (VIP không giới hạn)\n💰 Tổng cược: **${formatMoneyFull(totalBetAmount)}**`)
                 .addFields({ name: '📊 Cược các cửa', value: fieldDesc || 'Chưa có cược nào', inline: false })
-                .setFooter({ text: 'Bầu Cua x2 - x3 - x4 • Giới hạn 20m/ván' })
+                .setFooter({ text: 'Bầu Cua x2 - x3 - x4 • Giới hạn 1b/ván' })
                 .setTimestamp();
         },
         getComponents(isLocked = false) {
