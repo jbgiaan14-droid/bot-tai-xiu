@@ -16,7 +16,6 @@ const WITHDRAW_WEBHOOK_PORT = 3001;
 // TẠO BOT MINECRAFT
 // ============================================
 let bot = null;
-let isLoggedIn = false;
 let isInGame = false;
 
 function createBot() {
@@ -30,44 +29,49 @@ function createBot() {
         port: SERVER_PORT,
         username: BOT_NAME,
         version: '1.20.4',
-        auth: 'offline' // Quan trọng: dùng cho server crack
+        auth: 'offline'
     });
 
     // ===== KHI BOT VÀO SERVER =====
     bot.on('login', () => {
         console.log(`✅ ${BOT_NAME} đã kết nối tới server!`);
-        isLoggedIn = false;
         isInGame = false;
+        
+        // ===== LẦN 1: GÕ /dn skibiditoilet =====
+        setTimeout(() => {
+            console.log(`🔐 Lần 1: Đang đăng nhập...`);
+            bot.chat(`/dn ${PASSWORD}`);
+        }, 2000);
+        
+        // ===== LẦN 2: GÕ /dn skibiditoilet (sau 10 giây) =====
+        setTimeout(() => {
+            console.log(`🔐 Lần 2: Đang đăng nhập lại...`);
+            bot.chat(`/dn ${PASSWORD}`);
+        }, 12000); // 2s + 10s = 12s
+        
+        // ===== GÕ /menu (sau 15 giây) =====
+        setTimeout(() => {
+            console.log(`📋 Mở menu...`);
+            bot.chat('/menu');
+        }, 17000); // 12s + 5s = 17s
+        
+        // ===== CHỌN SLOT 24 (sau 19 giây) =====
+        setTimeout(() => {
+            console.log(`🎮 Chọn KingsMP (slot 24)...`);
+            // Cách 1: Gửi lệnh chọn slot (nếu server hỗ trợ)
+            bot.chat('/select 24');
+            // Cách 2: Click vào slot 24 trong inventory
+            // bot.clickWindow(24, 0, 0);
+        }, 19000); // 17s + 2s = 19s
     });
 
-    // ===== LẮNG NGHE TIN NHẮN HỆ THỐNG =====
+    // ===== LẮNG NGHE TIN NHẮN =====
     bot.on('message', (jsonMsg) => {
         const msg = jsonMsg.toString();
         console.log(`📩 ${msg}`);
 
-        // ===== PHÁT HIỆN YÊU CẦU ĐĂNG NHẬP =====
-        if (msg.includes('/dn') || msg.includes('đăng nhập')) {
-            if (!isLoggedIn) {
-                console.log(`🔐 Đang đăng nhập với mật khẩu...`);
-                bot.chat(`/dn ${PASSWORD}`);
-                isLoggedIn = true;
-            }
-        }
-
-        // ===== ĐĂNG NHẬP THÀNH CÔNG =====
-        if (msg.includes('Đăng nhập thành công')) {
-            console.log(`✅ Đăng nhập thành công!`);
-            isLoggedIn = true;
-            
-            // Chờ 10 giây rồi vào menu
-            setTimeout(() => {
-                console.log(`📋 Mở menu...`);
-                bot.chat('/menu');
-            }, 10000);
-        }
-
-        // ===== ĐÃ VÀO KINGSMP =====
-        if (msg.includes('KingsMP') || msg.includes('Đã vào KingsMP')) {
+        // ===== KIỂM TRA ĐÃ VÀO KINGSMP CHƯA =====
+        if (msg.includes('KingsMP') || msg.includes('vào KingsMP') || msg.includes('đã vào KingsMP')) {
             console.log(`✅ Đã vào KingsMP! Bot sẵn sàng!`);
             isInGame = true;
         }
@@ -75,7 +79,6 @@ function createBot() {
         // ===== BỊ KICK =====
         if (msg.includes('đã bị kick') || msg.includes('Bạn đã bị') || msg.includes('disconnect')) {
             console.log(`⚠️ Bot bị kick! Thử lại sau 15s...`);
-            isLoggedIn = false;
             setTimeout(() => {
                 createBot();
             }, 15000);
@@ -149,10 +152,11 @@ function createBot() {
 
     // ===== BOT BỊ NGẮT KẾT NỐI =====
     bot.on('end', () => {
-        console.log('🔴 Bot đã ngắt kết nối!');
-        isLoggedIn = false;
+        console.log('🔴 Bot đã ngắt kết nối! Thử lại sau 10s...');
         isInGame = false;
-        // Không tự động reconnect ở đây, để xử lý ở chỗ khác
+        setTimeout(() => {
+            createBot();
+        }, 10000);
     });
 
     // ============================================
