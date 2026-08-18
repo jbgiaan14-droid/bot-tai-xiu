@@ -335,6 +335,61 @@ app.get('/api/loss-history', (req, res) => {
 });
 
 // ============================================================
+//  WEBHOOK NHẬN TÍN HIỆU TỪ MINECRAFT BOT (AUTO NẠP)
+// ============================================================
+app.post('/webhook/minecraft-pay', async (req, res) => {
+    const { username, amount } = req.body;
+
+    if (!username || !amount) {
+        return res.status(400).json({ success: false, message: 'Thiếu thông tin!' });
+    }
+
+    console.log(`💰 Nhận pay từ Minecraft: ${username} - ${amount}`);
+
+    let discordId = null;
+    let ignKey = null;
+
+    for (const [ign, id] of Object.entries(ignToDiscordMap)) {
+        if (ign.toLowerCase() === username.toLowerCase()) {
+            discordId = id;
+            ignKey = ign;
+            break;
+        }
+    }
+
+    if (!discordId) {
+        console.log(`⚠️ Không tìm thấy Discord ID cho IGN: ${username}`);
+        return res.json({ success: false, message: 'Không tìm thấy người chơi đã đăng ký!' });
+    }
+
+    const depositAmount = parseInt(amount);
+    if (isNaN(depositAmount) || depositAmount <= 0) {
+        return res.status(400).json({ success: false, message: 'Số tiền không hợp lệ!' });
+    }
+
+    balances[discordId] = (balances[discordId] || 100000000) + depositAmount;
+    saveData();
+
+    try {
+        const userObj = await client.users.fetch(discordId);
+        if (userObj) {
+            await userObj.send(`✅ **NẠP TIỀN THÀNH CÔNG!**\n💰 Đã cộng: **${formatMoneyFull(depositAmount)}**\n📊 Số dư mới: **${formatMoneyFull(balances[discordId])}**\n🎮 IGN: \`${ignKey}\``);
+        }
+    } catch (err) {
+        console.log('⚠️ Không thể gửi DM:', err.message);
+    }
+
+    try {
+        const channel = await client.channels.fetch(ALLOWED_CHANNEL_ID);
+        if (channel) {
+            await channel.send(`💰 **${ignKey}** đã nạp **${formatMoneyFull(depositAmount)}** thành công! ✅`);
+        }
+    } catch (err) {}
+
+    return res.json({ success: true, message: `Đã cộng ${formatMoneyFull(depositAmount)} cho ${ignKey}` });
+});
+
+// ============================================================
 //  WEB SERVER
 // ============================================================
 const WEB_PORT = process.env.WEB_PORT || 3000;
@@ -365,7 +420,7 @@ const UNREGISTERED_ROLE_ID = '1538847435110088764';
 const REGISTERED_ROLE_ID = '1538894397725216779';
 const VERIFIED_CHANNEL_ID = '1538847435110088764';
 const ADMIN_IDS = ['1291949040719630357', '1130441780479922176'];
-const PAY_BOT_NAME = 'giaanday2121';
+const PAY_BOT_NAME = 'caythue';
 
 // ===== VARIABLES =====
 let balances = {};
@@ -455,84 +510,42 @@ function throwBauCua() {
     ];
 }
 
-// ===== WEBHOOK =====
-app.post('/webhook/deposit', async (req, res) => {
-    let { discordId, amount, ign } = req.body;
-    if (!discordId && ign) {
-        const cleanIgn = ign.trim().toLowerCase();
-        discordId = ignToDiscordMap[cleanIgn];
-    }
-    if (!discordId || !amount) {
-        return res.status(400).json({ success: false, message: 'Thiếu thông tin' });
-    }
-    const depositAmount = parseInt(amount);
-    if (isNaN(depositAmount) || depositAmount <= 0) {
-        return res.status(400).json({ success: false, message: 'Số tiền không hợp lệ' });
-    }
-    balances[discordId] = (balances[discordId] || 100000000) + depositAmount;
-    saveData();
-    try {
-        const userObj = await client.users.fetch(discordId);
-        if (userObj) {
-            await userObj.send(`✅ **NẠP TIỀN THÀNH CÔNG!**\n💰 Đã cộng: **${formatMoneyFull(depositAmount)}**\n📊 Số dư mới: **${formatMoneyFull(balances[discordId])}**`);
-        }
-    } catch (err) {}
-    return res.json({ success: true, newBalance: balances[discordId] });
-});
-
-// ===== AUTO TRANSFER =====
-setInterval(() => {
-    if (!autoTransfer.enabled || !autoTransfer.userId) return;
-    if (autoTransfer.interval <= 0) return;
-    const now = Date.now();
-    const lastRun = autoTransfer.lastRun ? new Date(autoTransfer.lastRun).getTime() : 0;
-    const intervalMs = autoTransfer.interval * 60 * 1000;
-    if (now - lastRun >= intervalMs) {
-        const userId = autoTransfer.userId;
-        const amount = autoTransfer.amount || 1000000;
-        balances[userId] = (balances[userId] || 100000000) + amount;
-        autoTransfer.lastRun = new Date().toISOString();
-        transferHistory.push({
-            to: userId,
-            amount: amount,
-            note: '🤖 Auto Transfer',
-            time: new Date().toISOString(),
-            from: 'Auto'
-        });
-        saveData();
-        console.log(`🤖 Auto transfer: ${formatMoneyFull(amount)} -> ${userId}`);
-    }
-}, 60000);
-
 // ============================================================
-//  SỰ KIỆN THÀNH VIÊN MỚI VÀO SERVER (CÓ DEBUG)
+//  SỰ KIỆN THÀNH VIÊN MỚI VÀO SERVER (ĐÃ SỬA - GHI NHỚ IGN)
 // ============================================================
 client.on('guildMemberAdd', async (member) => {
     console.log(`🔔 ${member.user.username} (${member.user.id}) vừa vào server!`);
-    
+
     try {
-        // Kiểm tra role trong server
+        // ===== KIỂM TRA XEM NGƯỜI DÙNG ĐÃ ĐĂNG KÝ IGN CHƯA =====
+        const existingUser = Object.entries(ignToDiscordMap).find(
+            ([ign, discordId]) => discordId === member.user.id
+        );
+
+        if (existingUser) {
+            console.log(`✅ ${member.user.username} đã đăng ký IGN: ${existingUser[0]}`);
+
+            // Gán role "Đã đăng ký"
+            const registeredRole = member.guild.roles.cache.get(REGISTERED_ROLE_ID);
+            if (registeredRole) {
+                await member.roles.add(registeredRole);
+                console.log(`✅ Đã gán role "Đã đăng ký" cho ${member.user.username}`);
+            }
+            
+            // Gỡ role "Chưa đăng ký" nếu có
+            const unregisteredRole = member.guild.roles.cache.get(UNREGISTERED_ROLE_ID);
+            if (unregisteredRole && member.roles.cache.has(unregisteredRole.id)) {
+                await member.roles.remove(unregisteredRole);
+            }
+            return; // Đã có IGN, bỏ qua phần chào mừng
+        }
+
+        // ===== CHƯA ĐĂNG KÝ: GÁN ROLE "CHƯA ĐĂNG KÝ" =====
         const role = member.guild.roles.cache.get(UNREGISTERED_ROLE_ID);
-        console.log(`📌 Role "Chưa đăng ký" tìm thấy: ${role ? role.name : 'KHÔNG TÌM THẤY!'}`);
-        
-        if (!role) {
-            console.log(`❌ KHÔNG TÌM THẤY ROLE VỚI ID: ${UNREGISTERED_ROLE_ID}`);
-            console.log(`📌 Danh sách role trong server:`, member.guild.roles.cache.map(r => `${r.name} (${r.id})`).join(', '));
-            return;
+        if (role) {
+            await member.roles.add(role);
+            console.log(`✅ Đã gán role "Chưa đăng ký" cho ${member.user.username}`);
         }
-
-        // Kiểm tra bot có quyền Manage Roles không
-        const botMember = await member.guild.members.fetch(client.user.id);
-        const hasPerm = botMember.permissions.has(PermissionsBitField.Flags.ManageRoles);
-        console.log(`🔑 Bot có quyền Manage Roles: ${hasPerm}`);
-        
-        if (!hasPerm) {
-            console.log(`❌ BOT KHÔNG CÓ QUYỀN MANAGE ROLES!`);
-        }
-
-        // Gán role
-        await member.roles.add(role);
-        console.log(`✅ Đã gán role "${role.name}" cho ${member.user.username}`);
 
         // ===== GỬI TIN NHẮN CHÀO MỪNG =====
         const embed = new EmbedBuilder()
@@ -561,7 +574,6 @@ client.on('guildMemberAdd', async (member) => {
 
     } catch (err) {
         console.log(`❌ LỖI GÁN ROLE:`, err.message);
-        console.log(`📌 Stack trace:`, err.stack);
     }
 });
 
