@@ -37,32 +37,46 @@ function createBot() {
         console.log(`✅ ${BOT_NAME} đã kết nối tới server!`);
         isInGame = false;
         
-        // ===== LẦN 1: GÕ /dn skibiditoilet =====
+        // ===== LẦN 1: GÕ /dn skibiditoilet (sau 2s) =====
         setTimeout(() => {
             console.log(`🔐 Lần 1: Đang đăng nhập...`);
             bot.chat(`/dn ${PASSWORD}`);
         }, 2000);
         
-        // ===== LẦN 2: GÕ /dn skibiditoilet (sau 10 giây) =====
+        // ===== LẦN 2: GÕ /dn skibiditoilet (sau 12s) =====
         setTimeout(() => {
             console.log(`🔐 Lần 2: Đang đăng nhập lại...`);
             bot.chat(`/dn ${PASSWORD}`);
-        }, 12000); // 2s + 10s = 12s
+        }, 12000);
         
-        // ===== GÕ /menu (sau 15 giây) =====
+        // ===== GÕ /menu (sau 14s - sau lần 2 khoảng 2s) =====
         setTimeout(() => {
             console.log(`📋 Mở menu...`);
             bot.chat('/menu');
-        }, 17000); // 12s + 5s = 17s
+        }, 14000);
         
-        // ===== CHỌN SLOT 24 (sau 19 giây) =====
+        // ===== CHỌN SLOT 24 (sau 16s) =====
         setTimeout(() => {
             console.log(`🎮 Chọn KingsMP (slot 24)...`);
-            // Cách 1: Gửi lệnh chọn slot (nếu server hỗ trợ)
-            bot.chat('/select 24');
-            // Cách 2: Click vào slot 24 trong inventory
-            // bot.clickWindow(24, 0, 0);
-        }, 19000); // 17s + 2s = 19s
+            // Mở inventory và click slot 24
+            bot.clickWindow(24, 0, 0);
+        }, 16000);
+    });
+
+    // ===== LẮNG NGHE SỰ KIỆN INVENTORY =====
+    bot.on('windowOpen', (window) => {
+        console.log(`📦 Đã mở inventory: ${window.title}`);
+        
+        // Nếu là menu chọn cụm server, click vào slot 24
+        if (window.title && window.title.includes('Menu')) {
+            console.log(`🎮 Click vào slot 24 để chọn KingsMP...`);
+            bot.clickWindow(24, 0, 0);
+            
+            setTimeout(() => {
+                bot.closeWindow(window);
+                console.log(`✅ Đã đóng inventory!`);
+            }, 1000);
+        }
     });
 
     // ===== LẮNG NGHE TIN NHẮN =====
