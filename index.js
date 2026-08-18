@@ -536,7 +536,14 @@ client.on('guildMemberAdd', async (member) => {
             const unregisteredRole = member.guild.roles.cache.get(UNREGISTERED_ROLE_ID);
             if (unregisteredRole && member.roles.cache.has(unregisteredRole.id)) {
                 await member.roles.remove(unregisteredRole);
+                console.log(`✅ Đã gỡ role "Chưa đăng ký" cho ${member.user.username}`);
             }
+            
+            // Gửi DM chào mừng trở lại
+            try {
+                await member.user.send(`👋 Chào mừng trở lại **${member.user.username}**!\n🎮 IGN: \`${existingUser[0]}\`\n💰 Số dư: ${formatMoneyFull(balances[member.user.id] || 0)}`);
+            } catch (err) {}
+            
             return; // Đã có IGN, bỏ qua phần chào mừng
         }
 
@@ -590,6 +597,18 @@ client.once('ready', () => {
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
     const content = message.content.toLowerCase();
+
+    // ===== TỰ ĐỘNG XÓA TIN NHẮN TRONG KÊNH VERIFIED (SAU 5 GIÂY) =====
+    if (message.channel.id === VERIFIED_CHANNEL_ID) {
+        setTimeout(async () => {
+            try {
+                await message.delete();
+                console.log(`🗑️ Đã xóa tin nhắn của ${message.author.username} trong kênh Verified`);
+            } catch (err) {
+                // Bỏ qua nếu tin nhắn đã bị xóa hoặc bot không có quyền
+            }
+        }, 5000);
+    }
 
     // ===== LỆNH ĐĂNG KÝ IGN =====
     if (content === '!register' || content.startsWith('!register ')) {
