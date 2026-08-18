@@ -5,7 +5,7 @@ const express = require('express');
 //  CONFIG
 // ============================================================
 const BOT_NAME = 'caythue'; // Tên bot trong Minecraft
-const SERVER_IP = 'kingmc.com'; // IP server Minecraft
+const SERVER_IP = 'kingmc.vn'; // IP server Minecraft
 const SERVER_PORT = 25565; // Port server (mặc định 25565)
 
 const DISCORD_WEBHOOK_URL = 'http://localhost:3000/webhook/minecraft-pay';
