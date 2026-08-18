@@ -17,6 +17,7 @@ const WITHDRAW_WEBHOOK_PORT = 3001;
 // ============================================
 let bot = null;
 let isInGame = false;
+let menuOpened = false;
 
 function createBot() {
     if (bot) {
@@ -36,6 +37,7 @@ function createBot() {
     bot.on('login', () => {
         console.log(`✅ ${BOT_NAME} đã kết nối tới server!`);
         isInGame = false;
+        menuOpened = false;
         
         // ===== LẦN 1: GÕ /dn skibiditoilet (sau 2s) =====
         setTimeout(() => {
@@ -49,32 +51,33 @@ function createBot() {
             bot.chat(`/dn ${PASSWORD}`);
         }, 12000);
         
-        // ===== GÕ /menu (sau 14s - sau lần 2 khoảng 2s) =====
+        // ===== GÕ /menu (sau 14s) =====
         setTimeout(() => {
             console.log(`📋 Mở menu...`);
             bot.chat('/menu');
         }, 14000);
-        
-        // ===== CHỌN SLOT 24 (sau 16s) =====
-        setTimeout(() => {
-            console.log(`🎮 Chọn KingsMP (slot 24)...`);
-            // Mở inventory và click slot 24
-            bot.clickWindow(24, 0, 0);
-        }, 16000);
     });
 
-    // ===== LẮNG NGHE SỰ KIỆN INVENTORY =====
+    // ===== LẮNG NGHE KHI MENU MỞ RA =====
     bot.on('windowOpen', (window) => {
-        console.log(`📦 Đã mở inventory: ${window.title}`);
+        console.log(`📦 Đã mở cửa sổ: ${window.title}`);
+        console.log(`📦 Loại: ${window.type}`);
         
-        // Nếu là menu chọn cụm server, click vào slot 24
-        if (window.title && window.title.includes('Menu')) {
-            console.log(`🎮 Click vào slot 24 để chọn KingsMP...`);
-            bot.clickWindow(24, 0, 0);
+        // Nếu là menu (Chest hoặc GUI)
+        if (window.type === 'chest' || window.title.includes('MENU') || window.title.includes('Menu')) {
+            console.log(`🎮 Đang tìm KingsMP trong menu...`);
             
+            // Đợi 1 giây để GUI load
             setTimeout(() => {
-                bot.closeWindow(window);
-                console.log(`✅ Đã đóng inventory!`);
+                // Click vào slot 24 (KingsMP - đầu da đen đội vương miện)
+                console.log(`👆 Click vào slot 24 (KingsMP)...`);
+                bot.clickWindow(24, 0, 0);
+                
+                // Đóng cửa sổ sau khi click
+                setTimeout(() => {
+                    bot.closeWindow(window);
+                    console.log(`✅ Đã đóng menu!`);
+                }, 1500);
             }, 1000);
         }
     });
