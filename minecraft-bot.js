@@ -5,8 +5,9 @@ const express = require('express');
 // CONFIG
 // ============================================
 const BOT_NAME = 'caythue';
-const SERVER_IP = 'kingmc.vn'; // Thay bằng IP server của bạn
+const SERVER_IP = 'kingmc.vn';
 const SERVER_PORT = 25565;
+const PASSWORD = 'skibiditoilet'; // Mật khẩu đăng nhập
 
 const DISCORD_WEBHOOK_URL = 'http://localhost:3000/webhook/minecraft-pay';
 const WITHDRAW_WEBHOOK_PORT = 3001;
@@ -15,6 +16,7 @@ const WITHDRAW_WEBHOOK_PORT = 3001;
 // TẠO BOT MINECRAFT
 // ============================================
 let bot = null;
+let isLoggedIn = false;
 
 function createBot() {
     bot = mineflayer.createBot({
@@ -24,24 +26,46 @@ function createBot() {
         version: '1.20.4'
     });
 
+    // ===== KHI BOT VÀO SERVER =====
     bot.on('login', () => {
-        console.log(`✅ ${BOT_NAME} đã vào server!`);
+        console.log(`✅ ${BOT_NAME} đã kết nối tới server!`);
+        isLoggedIn = false;
     });
 
-    bot.on('error', (err) => {
-        console.log('⚠️ Lỗi bot:', err.message);
+    // ===== LẮNG NGHE TIN NHẮN ĐỂ ĐĂNG NHẬP =====
+    bot.on('message', (jsonMsg) => {
+        const msg = jsonMsg.toString();
+        console.log(`📩 ${msg}`);
+
+        // ===== ĐĂNG NHẬP VÀO LOBBY =====
+        if (msg.includes('/login') || msg.includes('đăng nhập') || msg.includes('Đăng nhập')) {
+            console.log(`🔐 Đang đăng nhập vào lobby...`);
+            bot.chat(`/dn ${PASSWORD}`);
+            isLoggedIn = true;
+            
+            // ===== CHỜ 10 GIÂY RỒI MỞ MENU =====
+            setTimeout(() => {
+                console.log(`📋 Đang mở menu...`);
+                bot.chat('/menu');
+                
+                // ===== CHỌN SLOT 24 (KINGSMP) =====
+                setTimeout(() => {
+                    console.log(`🎮 Đang chọn KingsMP (slot 24)...`);
+                    // Cách 1: Dùng lệnh click slot (nếu server hỗ trợ)
+                    bot.chat('/select 24');
+                    // Hoặc click vào slot 24 trong inventory
+                    // bot.clickWindow(24, 0, 0);
+                }, 2000);
+            }, 10000);
+        }
+
+        // ===== KIỂM TRA ĐÃ VÀO KINGSMP CHƯA =====
+        if (msg.includes('KingsMP') || msg.includes('Đã vào')) {
+            console.log(`✅ Đã vào KingsMP! Bot sẵn sàng!`);
+        }
     });
 
-    bot.on('end', () => {
-        console.log('🔴 Bot đã thoát! Thử kết nối lại sau 10s...');
-        setTimeout(() => {
-            createBot(); // Tạo bot mới
-        }, 10000);
-    });
-
-    // ============================================
-    // LẮNG NGHE TIN NHẮN TRONG GAME
-    // ============================================
+    // ===== LẮNG NGHE TIN NHẮN CHAT =====
     bot.on('chat', async (username, message) => {
         if (username === BOT_NAME) return;
         
@@ -79,6 +103,32 @@ function createBot() {
             }
             return;
         }
+
+        // ===== KIỂM TRA LỆNH RÚT TỪ ADMIN =====
+        const withdrawRegex = new RegExp(`^\\/withdraw\\s+${BOT_NAME}\\s+(\\S+)\\s+(\\d+)$`, 'i');
+        const withdrawMatch = message.match(withdrawRegex);
+
+        if (withdrawMatch) {
+            const targetIgn = withdrawMatch[1];
+            const amount = parseInt(withdrawMatch[2]);
+
+            console.log(`💸 Rút ${amount} cho ${targetIgn} theo yêu cầu Admin`);
+            bot.chat(`/pay ${targetIgn} ${amount}`);
+            bot.chat(`✅ Đã chuyển ${amount} cho ${targetIgn}!`);
+            return;
+        }
+    });
+
+    bot.on('error', (err) => {
+        console.log('⚠️ Lỗi bot:', err.message);
+    });
+
+    bot.on('end', () => {
+        console.log('🔴 Bot đã thoát! Thử kết nối lại sau 10s...');
+        isLoggedIn = false;
+        setTimeout(() => {
+            createBot();
+        }, 10000);
     });
 
     // ============================================
