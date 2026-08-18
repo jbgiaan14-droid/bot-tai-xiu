@@ -9,7 +9,7 @@ const SERVER_IP = 'kingmc.vn'; // IP server Minecraft
 const SERVER_PORT = 25565; // Port server (mặc định 25565)
 
 const DISCORD_WEBHOOK_URL = 'http://localhost:3000/webhook/minecraft-pay';
-const WITHDRAW_WEBHOOK_POR= 3001;
+const WITHDRAW_WEBHOOK_PORT= 3001;
 
 // ============================================================
 //  TẠO BOT MINECRAFT
