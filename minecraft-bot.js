@@ -1,5 +1,6 @@
 const mineflayer = require('mineflayer');
 const express = require('express');
+const fs = require('fs');
 
 // ============================================
 // CONFIG
@@ -17,7 +18,15 @@ const WITHDRAW_WEBHOOK_PORT = 3001;
 // ============================================
 let bot = null;
 let isInGame = false;
-let menuOpened = false;
+
+function loadIgnMap() {
+    try {
+        const data = JSON.parse(fs.readFileSync('./data.json', 'utf-8'));
+        return data.ignToDiscordMap || {};
+    } catch (err) {
+        return {};
+    }
+}
 
 function createBot() {
     if (bot) {
@@ -37,21 +46,20 @@ function createBot() {
     bot.on('login', () => {
         console.log(`✅ ${BOT_NAME} đã kết nối tới server!`);
         isInGame = false;
-        menuOpened = false;
         
-        // ===== LẦN 1: GÕ /dn skibiditoilet (sau 2s) =====
+        // Lần 1: Đăng nhập
         setTimeout(() => {
             console.log(`🔐 Lần 1: Đang đăng nhập...`);
             bot.chat(`/dn ${PASSWORD}`);
         }, 2000);
         
-        // ===== LẦN 2: GÕ /dn skibiditoilet (sau 12s) =====
+        // Lần 2: Đăng nhập lại (sau 10s)
         setTimeout(() => {
             console.log(`🔐 Lần 2: Đang đăng nhập lại...`);
             bot.chat(`/dn ${PASSWORD}`);
         }, 12000);
         
-        // ===== GÕ /menu (sau 14s) =====
+        // Gõ /menu (sau 14s)
         setTimeout(() => {
             console.log(`📋 Mở menu...`);
             bot.chat('/menu');
@@ -61,19 +69,11 @@ function createBot() {
     // ===== LẮNG NGHE KHI MENU MỞ RA =====
     bot.on('windowOpen', (window) => {
         console.log(`📦 Đã mở cửa sổ: ${window.title}`);
-        console.log(`📦 Loại: ${window.type}`);
         
-        // Nếu là menu (Chest hoặc GUI)
-        if (window.type === 'chest' || window.title.includes('MENU') || window.title.includes('Menu')) {
-            console.log(`🎮 Đang tìm KingsMP trong menu...`);
-            
-            // Đợi 1 giây để GUI load
+        if (window.type === 'chest' || (window.title && window.title.includes('Menu'))) {
+            console.log(`🎮 Click vào slot 24 (KingsMP)...`);
             setTimeout(() => {
-                // Click vào slot 24 (KingsMP - đầu da đen đội vương miện)
-                console.log(`👆 Click vào slot 24 (KingsMP)...`);
                 bot.clickWindow(24, 0, 0);
-                
-                // Đóng cửa sổ sau khi click
                 setTimeout(() => {
                     bot.closeWindow(window);
                     console.log(`✅ Đã đóng menu!`);
@@ -82,13 +82,53 @@ function createBot() {
         }
     });
 
-    // ===== LẮNG NGHE TIN NHẮN =====
-    bot.on('message', (jsonMsg) => {
+    // ===== LẮNG NGHE TIN NHẮN HỆ THỐNG (bắt pay) =====
+    bot.on('message', async (jsonMsg) => {
         const msg = jsonMsg.toString();
         console.log(`📩 ${msg}`);
 
+        // ===== BẮT PAY TỪ TIN NHẮN HỆ THỐNG =====
+        // Ví dụ: "Bạn nhận được $100 từ Myokasi"
+        const payMatch = msg.match(/Bạn nhận được \$(\d+) từ (\S+)/i);
+        if (payMatch) {
+            const amount = parseInt(payMatch[1]);
+            const playerName = payMatch[2];
+
+            console.log(`💰 Phát hiện pay: ${playerName} - ${amount}`);
+
+            const ignMap = loadIgnMap();
+            let discordId = null;
+
+            for (const [ign, id] of Object.entries(ignMap)) {
+                if (ign.toLowerCase() === playerName.toLowerCase()) {
+                    discordId = id;
+                    break;
+                }
+            }
+
+            if (!discordId) {
+                console.log(`⚠️ ${playerName} chưa đăng ký!`);
+                return;
+            }
+
+            try {
+                await fetch(DISCORD_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: playerName,
+                        amount: amount
+                    })
+                });
+                console.log(`✅ Đã gửi tín hiệu nạp cho ${playerName}`);
+            } catch (err) {
+                console.log('⚠️ Lỗi gửi tín hiệu:', err.message);
+            }
+            return;
+        }
+
         // ===== KIỂM TRA ĐÃ VÀO KINGSMP CHƯA =====
-        if (msg.includes('KingsMP') || msg.includes('vào KingsMP') || msg.includes('đã vào KingsMP')) {
+        if (msg.includes('KingsMP') || msg.includes('vào KingsMP')) {
             console.log(`✅ Đã vào KingsMP! Bot sẵn sàng!`);
             isInGame = true;
         }
@@ -102,58 +142,10 @@ function createBot() {
         }
     });
 
-    // ===== LẮNG NGHE TIN NHẮN CHAT =====
-    bot.on('chat', async (username, message) => {
+    // ===== LẮNG NGHE TIN NHẮN CHAT (chỉ để log) =====
+    bot.on('chat', (username, message) => {
         if (username === BOT_NAME) return;
-        
         console.log(`💬 ${username}: ${message}`);
-
-        // ===== KIỂM TRA LỆNH PAY =====
-        const payRegex = new RegExp(`^\\/pay\\s+${BOT_NAME}\\s+(\\d+)$`, 'i');
-        const match = message.match(payRegex);
-
-        if (match && isInGame) {
-            const amount = parseInt(match[1]);
-            console.log(`💰 Nhận được ${amount} từ ${username}`);
-
-            try {
-                const response = await fetch(DISCORD_WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: username,
-                        amount: amount,
-                        timestamp: new Date().toISOString()
-                    })
-                });
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    bot.chat(`✅ Đã nhận ${amount} từ ${username}!`);
-                } else {
-                    bot.chat(`❌ Lỗi: ${data.message || 'Không tìm thấy người chơi!'}`);
-                }
-            } catch (err) {
-                console.log('⚠️ Lỗi gửi tín hiệu:', err.message);
-                bot.chat(`❌ Lỗi hệ thống!`);
-            }
-            return;
-        }
-
-        // ===== KIỂM TRA LỆNH RÚT TỪ ADMIN =====
-        const withdrawRegex = new RegExp(`^\\/withdraw\\s+${BOT_NAME}\\s+(\\S+)\\s+(\\d+)$`, 'i');
-        const withdrawMatch = message.match(withdrawRegex);
-
-        if (withdrawMatch && isInGame) {
-            const targetIgn = withdrawMatch[1];
-            const amount = parseInt(withdrawMatch[2]);
-
-            console.log(`💸 Rút ${amount} cho ${targetIgn} theo yêu cầu Admin`);
-            bot.chat(`/pay ${targetIgn} ${amount}`);
-            bot.chat(`✅ Đã chuyển ${amount} cho ${targetIgn}!`);
-            return;
-        }
     });
 
     // ===== XỬ LÝ LỖI =====
@@ -175,37 +167,34 @@ function createBot() {
             createBot();
         }, 10000);
     });
-
-    // ============================================
-    // WEBHOOK NHẬN LỆNH RÚT TỪ DISCORD
-    // ============================================
-    const app = express();
-    app.use(express.json());
-
-    app.post('/webhook/minecraft-withdraw', (req, res) => {
-        const { ign, amount } = req.body;
-
-        if (!ign || !amount) {
-            return res.status(400).json({ success: false, message: 'Thiếu thông tin!' });
-        }
-
-        if (!isInGame) {
-            return res.status(400).json({ success: false, message: 'Bot chưa vào game!' });
-        }
-
-        console.log(`💸 Nhận lệnh rút từ Discord: ${amount} cho ${ign}`);
-        bot.chat(`/pay ${ign} ${amount}`);
-        
-        res.json({ 
-            success: true, 
-            message: `Đã chuyển ${amount} cho ${ign}` 
-        });
-    });
-
-    app.listen(WITHDRAW_WEBHOOK_PORT, () => {
-        console.log(`🌐 Minecraft Bot API chạy tại http://localhost:${WITHDRAW_WEBHOOK_PORT}`);
-    });
 }
+
+// ============================================
+// WEBHOOK NHẬN LỆNH RÚT TỪ DISCORD
+// ============================================
+const app = express();
+app.use(express.json());
+
+app.post('/webhook/minecraft-withdraw', (req, res) => {
+    const { ign, amount } = req.body;
+
+    if (!ign || !amount) {
+        return res.status(400).json({ success: false, message: 'Thiếu thông tin!' });
+    }
+
+    if (!isInGame) {
+        return res.status(400).json({ success: false, message: 'Bot chưa vào game!' });
+    }
+
+    console.log(`💸 Nhận lệnh rút từ Discord: ${amount} cho ${ign}`);
+    bot.chat(`/pay ${ign} ${amount}`);
+    
+    res.json({ success: true, message: `Đã chuyển ${amount} cho ${ign}` });
+});
+
+app.listen(WITHDRAW_WEBHOOK_PORT, () => {
+    console.log(`🌐 Minecraft Bot API chạy tại http://localhost:${WITHDRAW_WEBHOOK_PORT}`);
+});
 
 // ============================================
 // KHỞI ĐỘNG BOT
