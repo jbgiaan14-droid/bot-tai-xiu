@@ -1054,66 +1054,70 @@ client.on('interactionCreate', async (i) => {
         if (i.customId === 'modal_nap') {
             const ign = i.fields.getTextInputValue('nap_ign').trim();
             const rawAmount = i.fields.getTextInputValue('nap_amount');
-            const formattedAmount = rawAmount.toUpperCase().endsWith('M' ) || rawAmount.toUpperCase().endsWith('B' ) || rawAmount.toUpperCase().endsWith('K' ) ? rawAmount.toUpperCase() : rawAmount.toUpperCase() + 'M';
-            
+            const amount = parseMoney(rawAmount, i.user.id);
+
+            if (isNaN(amount) || amount < 10000) {
+                return i.reply({ content: '❌ Số tiền không hợp lệ! Tối thiểu 10k.', ephemeral: true });
+            }
+
             ignToDiscordMap[ign.toLowerCase()] = i.user.id;
+            saveData();
 
             const embedDM = new EmbedBuilder()
                 .setColor(0x22c55e)
                 .setTitle('📥 Yêu cầu nạp Gambling')
-                .setDescription(`👤 **IGN xác nhận:** \`${ign}\`\n💰 **Số tiền:** \`${formattedAmount} Gambling\`\n⏰ **Hạn chót:** 5 phút tới\n\n📝 **Hướng dẫn:**\nChuyển đúng số Money bằng lệnh trong game:\n\`/pay ${PAY_BOT_NAME} ${rawAmount.toLowerCase()}\`\n\n📌 **Lưu ý:**\n• Hệ thống tự cộng tiền tự động ngay khi pay!`);
-            
-            let dmMessage;
+                .setDescription(`👤 **IGN xác nhận:** \`${ign}\`\n💰 **Số tiền:** ${formatMoneyFull(amount)}\n\n📝 **Hướng dẫn:**\nVào Minecraft gõ lệnh:\n\`/pay ${PAY_BOT_NAME} ${rawAmount}\`\n\n📌 **Lưu ý:**\n• Hệ thống tự cộng tiền tự động ngay khi pay!`)
+                .setTimestamp()
+                .setFooter({ text: 'KingMC Gambling • Hệ thống nội bộ' });
+
             try {
-                dmMessage = await i.user.send({ embeds: [embedDM] });
+                await i.user.send({ embeds: [embedDM] });
+                await i.reply({ content: '✅ Đã gửi hướng dẫn nạp vào DM!', ephemeral: true });
             } catch (err) {
-                return await i.reply({ content: '❌ Không thể gửi tin nhắn (DM) cho bạn! Vui lòng mở khóa tin nhắn riêng rồi thử lại.', ephemeral: true });
+                await i.reply({ content: '❌ Không thể gửi DM! Vui lòng mở DM.', ephemeral: true });
             }
 
-            const depositKey = `${i.user.id}_${Date.now()}`;
-            pendingDeposits[depositKey] = setTimeout(async () => {
-                delete pendingDeposits[depositKey];
-                try {
-                    const expiredEmbed = new EmbedBuilder()
-                        .setColor(0xef4444)
-                        .setTitle('⏰ Yêu cầu nạp đã hết hạn')
-                        .setDescription(`Yêu cầu nạp **${formattedAmount} Gambling** của bạn đã hết hạn.\n\n👤 **IGN:** \`${ign}\`\n💰 **Số tiền:** \`${formattedAmount} Gambling\`\n\nVui lòng tạo yêu cầu mới nếu muốn nạp tiếp.`);
-                    
-                    await dmMessage.edit({ embeds: [expiredEmbed] });
-                } catch (e) {}
-            }, 5 * 60 * 1000);
-
-            return await i.reply({ content: `✅ Đã tạo đơn nạp! Hãy kiểm tra tin nhắn (DM) riêng của bot để lấy cú pháp pay nhé.`, ephemeral: true });
+            return;
         }
 
         if (i.customId === 'modal_rut') {
-            const ign = i.fields.getTextInputValue('rut_ign');
+            const ign = i.fields.getTextInputValue('rut_ign').trim();
             const rawAmount = i.fields.getTextInputValue('rut_amount');
             let amount = parseMoney(rawAmount, i.user.id);
 
-            if (isNaN(amount) || amount < 1_000_000) {
-                return i.reply({ content: '❌ Số tiền rút không hợp lệ hoặc thấp hơn mức tối thiểu 1M!', ephemeral: true });
+            if (isNaN(amount) || amount < 10000) {
+                return i.reply({ content: '❌ Số tiền không hợp lệ! Tối thiểu 10k.', ephemeral: true });
             }
+
             if (getBalance(i.user.id) < amount) {
-                return i.reply({ content: `❌ Số dư không đủ! Số dư hiện tại: ${formatMoneyFull(getBalance(i.user.id))}`, ephemeral: true });
+                return i.reply({ content: `❌ Số dư không đủ! Số dư: ${formatMoneyFull(getBalance(i.user.id))}`, ephemeral: true });
             }
 
             balances[i.user.id] -= amount;
+            saveData();
 
-            const embedAdmin = new EmbedBuilder()
-                .setColor(0xef4444)
-                .setTitle('💸 YÊU CẦU RÚT GAMBLING MỚI')
-                .setDescription(`👤 **Thành viên:** <@${i.user.id}>\n🎮 **IGN Nhận tiền:** \`${ign}\`\n💰 **Số lượng rút:** **${formatMoneyFull(amount)}**`)
-                .setTimestamp();
+            try {
+                await fetch('http://localhost:3001/webhook/minecraft-withdraw', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ign, amount })
+                });
+            } catch (err) {
+                balances[i.user.id] += amount;
+                saveData();
+                return i.reply({ content: '❌ Hệ thống rút đang bận! Vui lòng thử lại sau.', ephemeral: true });
+            }
 
-            const rowAdmin = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`approve_rut_${i.user.id}`).setLabel('Duyệt').setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId(`reject_rut_${i.user.id}`).setLabel('Từ chối (Hoàn tiền)').setStyle(ButtonStyle.Danger)
-            );
+            await i.reply({ content: `✅ Đã tạo yêu cầu rút **${formatMoneyFull(amount)}** về IGN **${ign}**!`, ephemeral: true });
 
-            await i.channel.send({ content: `🔔 Có yêu cầu rút tiền mới cần xử lý!`, embeds: [embedAdmin], components: [rowAdmin] }).catch(() => {});
+            try {
+                const user = await client.users.fetch(i.user.id);
+                if (user) {
+                    await user.send(`💸 **RÚT TIỀN**\n🎮 IGN: \`${ign}\`\n💰 Số tiền: **${formatMoneyFull(amount)}**\n⏳ Đang xử lý...`);
+                }
+            } catch (err) {}
 
-            return await i.reply({ content: `✅ Đã tạo yêu cầu rút **${formatMoneyFull(amount)}** về nhân vật **${ign}** thành công!`, ephemeral: true });
+            return;
         }
 
         if (i.customId === 'modal_chuyen') {
