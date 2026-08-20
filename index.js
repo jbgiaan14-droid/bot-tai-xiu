@@ -1752,4 +1752,4 @@ async function finishBauCuaGame(channel, gameMessage, bets, userBets, totalBets)
 // ============================================================
 //  START BOT
 // ============================================================
-client.login(BOT_TOKEN);
+const BOT_TOKEN = process.env.BOT_TOKEN;
